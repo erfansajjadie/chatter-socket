@@ -17,6 +17,7 @@ model User {
   avatar       String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  pushToken    String?
   messages     Message[]
   participants Participant[]
 }

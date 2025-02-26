@@ -33,6 +33,7 @@ export class AuthController extends BaseController {
         name: dto.name,
         mobile: dto.mobile,
         avatar: dto.avatar,
+        pushToken: dto.pushToken,
       },
     });
     const token = jwt.sign({ userId: user.id }, secretKey ?? "", {

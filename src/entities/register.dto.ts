@@ -1,4 +1,10 @@
-import { IsNotEmpty, Matches, MinLength, Validate } from "class-validator";
+import {
+  IsNotEmpty,
+  IsOptional,
+  Matches,
+  MinLength,
+  Validate,
+} from "class-validator";
 import { Match, Unique } from "../helpers/validator";
 
 export class RegisterDto {
@@ -18,6 +24,9 @@ export class RegisterDto {
   @IsNotEmpty()
   @Match(RegisterDto, (d) => d.password)
   passwordConfirm: string;
+
+  @IsOptional()
+  pushToken: string;
 
   avatar: string;
 }
