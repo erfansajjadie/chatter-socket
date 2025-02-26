@@ -7,7 +7,7 @@ export class RegisterDto {
 
   @Matches(/^(\+98|0)?9\d{9}$/, { message: "موبایل معتبر نیست" })
   @Validate(Unique, ["user", "mobile"], {
-    message: "شماره موبایل از قبل وجود دراد",
+    message: "شماره موبایل از قبل وجود ندارد",
   })
   mobile: string;
 
