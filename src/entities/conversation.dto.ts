@@ -22,4 +22,7 @@ export class ConversationDto {
   @IsNotEmpty()
   @ValidateIf((obj) => obj.type === ConversationType.GROUP)
   name?: string;
+
+  @IsNotEmpty()
+  userId: number;
 }

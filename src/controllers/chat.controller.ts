@@ -25,7 +25,6 @@ export class ChatController extends BaseController {
   @Post("/create/conversation")
   async createConversation(
     @Body() dto: ConversationDto,
-    @CurrentUser({ required: true }) user: User,
     @UploadedFile("image", { options: uploadOptions("group-images") })
     file: any,
   ) {
@@ -38,7 +37,7 @@ export class ChatController extends BaseController {
         where: {
           participants: {
             some: {
-              userId: user.id,
+              userId: dto.userId,
             },
           },
           AND: {
@@ -53,7 +52,7 @@ export class ChatController extends BaseController {
           _count: {
             select: {
               messages: {
-                where: { userId: { not: user.id }, isSeen: false },
+                where: { userId: { not: dto.userId }, isSeen: false },
               },
             },
           },
@@ -67,7 +66,7 @@ export class ChatController extends BaseController {
       });
       if (previousConversation) {
         return super.ok({
-          conversation: conversationMapper(previousConversation, user.id),
+          conversation: conversationMapper(previousConversation, dto.userId),
         });
       }
     }
@@ -78,7 +77,7 @@ export class ChatController extends BaseController {
         _count: {
           select: {
             messages: {
-              where: { userId: { not: user.id }, isSeen: false },
+              where: { userId: { not: dto.userId }, isSeen: false },
             },
           },
         },
@@ -100,7 +99,7 @@ export class ChatController extends BaseController {
     await prisma.participant.createMany({
       data: [
         {
-          userId: user.id,
+          userId: dto.userId,
           conversationId: conversation.id,
         },
         ...participants.map((p) => {
@@ -113,21 +112,21 @@ export class ChatController extends BaseController {
     });
 
     return super.ok({
-      conversation: conversationMapper(conversation, user.id),
+      conversation: conversationMapper(conversation, dto.userId),
     });
   }
 
-  @Get("/conversations")
-  async getConversation(@CurrentUser({ required: true }) user: User) {
+  @Get("/conversations/:userId")
+  async getConversation(@Param("userId") userId: number) {
     const conversations = await prisma.conversation.findMany({
       where: {
-        participants: { some: { userId: user.id } },
+        participants: { some: { userId } },
       },
       orderBy: { lastMessageDate: "desc" },
       include: {
         _count: {
           select: {
-            messages: { where: { userId: { not: user.id }, isSeen: false } },
+            messages: { where: { userId: { not: userId }, isSeen: false } },
           },
         },
         participants: { take: 2, include: { user: true } },
@@ -140,7 +139,7 @@ export class ChatController extends BaseController {
     );
 
     return {
-      data: data.map((c) => conversationMapper(c, user.id)),
+      data: data.map((c) => conversationMapper(c, userId)),
     };
   }
 

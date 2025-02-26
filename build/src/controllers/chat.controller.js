@@ -34,7 +34,7 @@ const storage_1 = require("../helpers/storage");
 const mappers_1 = require("../helpers/mappers");
 const contact_dto_1 = require("../entities/contact.dto");
 let ChatController = exports.ChatController = class ChatController extends base_controller_1.default {
-    createConversation(dto, user, file) {
+    createConversation(dto, file) {
         const _super = Object.create(null, {
             ok: { get: () => super.ok }
         });
@@ -47,7 +47,7 @@ let ChatController = exports.ChatController = class ChatController extends base_
                     where: {
                         participants: {
                             some: {
-                                userId: user.id,
+                                userId: dto.userId,
                             },
                         },
                         AND: {
@@ -62,7 +62,7 @@ let ChatController = exports.ChatController = class ChatController extends base_
                         _count: {
                             select: {
                                 messages: {
-                                    where: { userId: { not: user.id }, isSeen: false },
+                                    where: { userId: { not: dto.userId }, isSeen: false },
                                 },
                             },
                         },
@@ -76,7 +76,7 @@ let ChatController = exports.ChatController = class ChatController extends base_
                 });
                 if (previousConversation) {
                     return _super.ok.call(this, {
-                        conversation: (0, mappers_1.conversationMapper)(previousConversation, user.id),
+                        conversation: (0, mappers_1.conversationMapper)(previousConversation, dto.userId),
                     });
                 }
             }
@@ -86,7 +86,7 @@ let ChatController = exports.ChatController = class ChatController extends base_
                     _count: {
                         select: {
                             messages: {
-                                where: { userId: { not: user.id }, isSeen: false },
+                                where: { userId: { not: dto.userId }, isSeen: false },
                             },
                         },
                     },
@@ -107,7 +107,7 @@ let ChatController = exports.ChatController = class ChatController extends base_
             yield prisma_1.prisma.participant.createMany({
                 data: [
                     {
-                        userId: user.id,
+                        userId: dto.userId,
                         conversationId: conversation.id,
                     },
                     ...participants.map((p) => {
@@ -119,21 +119,21 @@ let ChatController = exports.ChatController = class ChatController extends base_
                 ],
             });
             return _super.ok.call(this, {
-                conversation: (0, mappers_1.conversationMapper)(conversation, user.id),
+                conversation: (0, mappers_1.conversationMapper)(conversation, dto.userId),
             });
         });
     }
-    getConversation(user) {
+    getConversation(userId) {
         return __awaiter(this, void 0, void 0, function* () {
             const conversations = yield prisma_1.prisma.conversation.findMany({
                 where: {
-                    participants: { some: { userId: user.id } },
+                    participants: { some: { userId } },
                 },
                 orderBy: { lastMessageDate: "desc" },
                 include: {
                     _count: {
                         select: {
-                            messages: { where: { userId: { not: user.id }, isSeen: false } },
+                            messages: { where: { userId: { not: userId }, isSeen: false } },
                         },
                     },
                     participants: { take: 2, include: { user: true } },
@@ -142,7 +142,7 @@ let ChatController = exports.ChatController = class ChatController extends base_
             });
             const data = conversations.filter((c) => c.type == client_1.ConversationType.GROUP ? true : c.messages.length > 0);
             return {
-                data: data.map((c) => (0, mappers_1.conversationMapper)(c, user.id)),
+                data: data.map((c) => (0, mappers_1.conversationMapper)(c, userId)),
             };
         });
     }
@@ -175,17 +175,16 @@ let ChatController = exports.ChatController = class ChatController extends base_
 __decorate([
     (0, routing_controllers_1.Post)("/create/conversation"),
     __param(0, (0, routing_controllers_1.Body)()),
-    __param(1, (0, routing_controllers_1.CurrentUser)({ required: true })),
-    __param(2, (0, routing_controllers_1.UploadedFile)("image", { options: (0, storage_1.uploadOptions)("group-images") })),
+    __param(1, (0, routing_controllers_1.UploadedFile)("image", { options: (0, storage_1.uploadOptions)("group-images") })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [conversation_dto_1.ConversationDto, Object, Object]),
+    __metadata("design:paramtypes", [conversation_dto_1.ConversationDto, Object]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "createConversation", null);
 __decorate([
-    (0, routing_controllers_1.Get)("/conversations"),
-    __param(0, (0, routing_controllers_1.CurrentUser)({ required: true })),
+    (0, routing_controllers_1.Get)("/conversations/:userId"),
+    __param(0, (0, routing_controllers_1.Param)("userId")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getConversation", null);
 __decorate([

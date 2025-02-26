@@ -33,3 +33,7 @@ __decorate([
     (0, class_validator_1.ValidateIf)((obj) => obj.type === client_1.ConversationType.GROUP),
     __metadata("design:type", String)
 ], ConversationDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", Number)
+], ConversationDto.prototype, "userId", void 0);
