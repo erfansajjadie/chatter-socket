@@ -46,6 +46,7 @@ let AuthController = exports.AuthController = class AuthController extends base_
                     mobile: dto.mobile,
                     avatar: dto.avatar,
                     pushToken: dto.pushToken,
+                    id: dto.id,
                 },
             });
             const token = jsonwebtoken_1.default.sign({ userId: user.id }, secretKey !== null && secretKey !== void 0 ? secretKey : "", {

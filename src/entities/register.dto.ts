@@ -2,6 +2,9 @@ import { IsNotEmpty, IsOptional, Matches, Validate } from "class-validator";
 import { Unique } from "../helpers/validator";
 
 export class RegisterDto {
+  @IsNotEmpty()
+  id: number;
+
   @IsNotEmpty({ message: "فیلد نام ضروری است" })
   name: string;
 

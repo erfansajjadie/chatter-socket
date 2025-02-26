@@ -16,6 +16,10 @@ class RegisterDto {
 }
 exports.RegisterDto = RegisterDto;
 __decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", Number)
+], RegisterDto.prototype, "id", void 0);
+__decorate([
     (0, class_validator_1.IsNotEmpty)({ message: "فیلد نام ضروری است" }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "name", void 0);
