@@ -19,6 +19,8 @@ model User {
   updatedAt    DateTime      @updatedAt
   pushToken    String?
   messages     Message[]
+  isOnline     Boolean        @default(false)
+  socketId     String?
   participants Participant[]
 }
 

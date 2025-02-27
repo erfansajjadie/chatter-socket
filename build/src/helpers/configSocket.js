@@ -20,8 +20,18 @@ function configureSocket(server) {
             origin: "*",
         },
     });
-    io.on("connection", (socket) => {
+    io.on("connection", (socket) => __awaiter(this, void 0, void 0, function* () {
         console.log("A user connected:", socket.id);
+        // Update user status to online
+        const userId = socket.handshake.query.userId;
+        if (userId) {
+            yield prisma_1.prisma.user.update({
+                where: { id: Number(userId) },
+                data: { isOnline: true, socketId: socket.id },
+            });
+            // Emit user online event
+            io.emit("userOnline", { userId: Number(userId) });
+        }
         socket.on("sendMessage", (data) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const { userId, conversationId, text } = data;
@@ -54,9 +64,18 @@ function configureSocket(server) {
             socket.join(`conversation_${conversationId}`);
             console.log(`User ${socket.id} joined conversation ${conversationId}`);
         });
-        socket.on("disconnect", () => {
+        socket.on("disconnect", () => __awaiter(this, void 0, void 0, function* () {
             console.log("A user disconnected:", socket.id);
-        });
+            // Update user status to offline
+            if (userId) {
+                yield prisma_1.prisma.user.update({
+                    where: { id: Number(userId) },
+                    data: { isOnline: false, socketId: null },
+                });
+                // Emit user offline event
+                io.emit("userOffline", { userId: Number(userId) });
+            }
+        }));
         // "Typing" events
         socket.on("startTyping", (data) => __awaiter(this, void 0, void 0, function* () {
             const { conversationId, userId } = data;
@@ -124,6 +143,6 @@ function configureSocket(server) {
                 console.error("Error sending voice message:", error);
             }
         }));
-    });
+    }));
 }
 exports.default = configureSocket;

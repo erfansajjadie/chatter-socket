@@ -1,7 +1,6 @@
 import BaseController from "./base.controller";
 import {
   Body,
-  CurrentUser,
   Get,
   JsonController,
   Param,

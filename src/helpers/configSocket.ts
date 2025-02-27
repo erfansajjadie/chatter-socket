@@ -12,8 +12,20 @@ function configureSocket(server: http.Server) {
     },
   });
 
-  io.on("connection", (socket: Socket) => {
+  io.on("connection", async (socket: Socket) => {
     console.log("A user connected:", socket.id);
+
+    // Update user status to online
+    const userId = socket.handshake.query.userId;
+    if (userId) {
+      await prisma.user.update({
+        where: { id: Number(userId) },
+        data: { isOnline: true, socketId: socket.id },
+      });
+
+      // Emit user online event
+      io.emit("userOnline", { userId: Number(userId) });
+    }
 
     socket.on("sendMessage", async (data) => {
       try {
@@ -52,8 +64,19 @@ function configureSocket(server: http.Server) {
       console.log(`User ${socket.id} joined conversation ${conversationId}`);
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("A user disconnected:", socket.id);
+
+      // Update user status to offline
+      if (userId) {
+        await prisma.user.update({
+          where: { id: Number(userId) },
+          data: { isOnline: false, socketId: null },
+        });
+
+        // Emit user offline event
+        io.emit("userOffline", { userId: Number(userId) });
+      }
     });
 
     // "Typing" events
