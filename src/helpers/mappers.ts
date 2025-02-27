@@ -33,6 +33,8 @@ export function userMapper(user: User) {
 export function conversationMapper(data: ConversationFull, userId: number) {
   let name;
   let image;
+  let isOnline = false;
+  let receiverId;
 
   if (data.type == ConversationType.GROUP) {
     name = data.name;
@@ -41,6 +43,8 @@ export function conversationMapper(data: ConversationFull, userId: number) {
     const receiver = data.participants.find((p) => p.userId != userId);
     name = receiver?.user.name;
     image = receiver?.user.avatar;
+    isOnline = receiver?.user.isOnline ?? false;
+    receiverId = receiver?.userId;
   }
 
   return {
@@ -48,6 +52,8 @@ export function conversationMapper(data: ConversationFull, userId: number) {
     name,
     image: getFileUrl(image),
     type: data.type,
+    isOnline,
+    receiverId,
     unreadCount: data._count.messages,
     ...(data.messages.length > 0
       ? { lastMessage: messageMapper(data.messages[0]) }

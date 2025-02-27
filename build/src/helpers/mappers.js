@@ -17,8 +17,11 @@ function userMapper(user) {
 }
 exports.userMapper = userMapper;
 function conversationMapper(data, userId) {
+    var _a;
     let name;
     let image;
+    let isOnline = false;
+    let receiverId;
     if (data.type == client_1.ConversationType.GROUP) {
         name = data.name;
         image = data.image;
@@ -27,8 +30,11 @@ function conversationMapper(data, userId) {
         const receiver = data.participants.find((p) => p.userId != userId);
         name = receiver === null || receiver === void 0 ? void 0 : receiver.user.name;
         image = receiver === null || receiver === void 0 ? void 0 : receiver.user.avatar;
+        isOnline = (_a = receiver === null || receiver === void 0 ? void 0 : receiver.user.isOnline) !== null && _a !== void 0 ? _a : false;
+        receiverId = receiver === null || receiver === void 0 ? void 0 : receiver.userId;
     }
-    return Object.assign({ id: data.id, name, image: (0, functions_1.getFileUrl)(image), type: data.type, unreadCount: data._count.messages }, (data.messages.length > 0
+    return Object.assign({ id: data.id, name, image: (0, functions_1.getFileUrl)(image), type: data.type, isOnline,
+        receiverId, unreadCount: data._count.messages }, (data.messages.length > 0
         ? { lastMessage: messageMapper(data.messages[0]) }
         : null));
 }
