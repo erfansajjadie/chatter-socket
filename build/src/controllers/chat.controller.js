@@ -165,9 +165,10 @@ let ChatController = exports.ChatController = class ChatController extends base_
     }
     getContacts(dto) {
         return __awaiter(this, void 0, void 0, function* () {
-            const users = yield prisma_1.prisma.user.findMany({
-                where: { mobile: { in: dto.mobiles } },
-            });
+            /* {
+              where: { mobile: { in: dto.mobiles } },
+            } */
+            const users = yield prisma_1.prisma.user.findMany();
             return { data: (0, mappers_1.mapper)(users, mappers_1.userMapper) };
         });
     }

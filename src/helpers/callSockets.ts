@@ -57,19 +57,22 @@ export class CallService {
   private async handleInitiateCall(socket: Socket, data: any) {
     const { to, from, callType, offer, userName, userEmail } = data;
 
-    // Create a new conversation record with the CONNECTED state
-    const conversation = await prisma.conversation.create({
+    const userIpHeader = socket?.handshake.headers["x-forwarded-for"];
+    const userIp = Array.isArray(userIpHeader)
+      ? userIpHeader[0]
+      : userIpHeader || "";
+
+    // Create a new chat record with the CONNECTED state
+    const chat = await prisma.chat.create({
       data: {
-        type: callType as "VOICE" | "VIDEO",
-        participants: {
-          create: [{ userId: from }, { userId: to }],
-        },
-        messages: {
-          create: {
-            text: "Call initiated",
-            userId: from,
-          },
-        },
+        senderEmail: userEmail,
+        senderName: userName,
+        receiverId: to,
+        type: callType,
+        state: ChatState.CONNECTED,
+        userSocket: from,
+        offer: offer,
+        userIp: userIp,
       },
     });
 
@@ -80,9 +83,9 @@ export class CallService {
       offer,
       userName,
       userEmail,
-      conversationId: conversation.id,
+      chatId: chat.id,
     });
-    this.io.to(from).emit("call_created", { conversationId: conversation.id });
+    this.io.to(from).emit("call_created", { chatId: chat.id });
     console.log(`Initiating ${callType} call from ${from} to ${to}`);
   }
 
@@ -134,10 +137,10 @@ export class CallService {
   private async handleRejectCall(socket: Socket, data: { to: string }) {
     const { to } = data;
 
-    // Update the conversation state to REJECTED
-    await prisma.conversation.updateMany({
-      where: { participants: { some: { userId: Number(to) } } },
-      data: { lastMessageDate: new Date() },
+    // Update the chat state to REJECTED
+    await prisma.chat.updateMany({
+      where: { userSocket: to },
+      data: { state: ChatState.REJECTED_BY_ADMIN },
     });
 
     // Notify the caller that the call was rejected
@@ -150,14 +153,14 @@ export class CallService {
    */
   private async handleUserEndCall(
     socket: Socket,
-    data: { to: string; duration: number; conversationId: number },
+    data: { to: string; duration: number; chatId: number },
   ) {
-    const { to, conversationId } = data;
+    const { to, chatId } = data;
 
-    // Update the conversation state to DISCONNECTED
-    await prisma.conversation.update({
-      where: { id: conversationId },
-      data: { lastMessageDate: new Date() },
+    // Update the chat state to DISCONNECTED
+    await prisma.chat.update({
+      where: { id: chatId },
+      data: { state: ChatState.ANSWERED, callDuration: data.duration },
     });
 
     // Notify both participants that the call has ended
@@ -171,14 +174,14 @@ export class CallService {
    */
   private async handleAdminEndCall(
     socket: Socket,
-    data: { to: string; duration: number; conversationId: number },
+    data: { to: string; duration: number; chatId: number },
   ) {
-    const { to, conversationId } = data;
+    const { to, chatId } = data;
 
-    // Update the conversation state to DISCONNECTED
-    await prisma.conversation.update({
-      where: { id: conversationId },
-      data: { lastMessageDate: new Date() },
+    // Update the chat state to DISCONNECTED
+    await prisma.chat.update({
+      where: { id: chatId },
+      data: { state: ChatState.ANSWERED, callDuration: data.duration },
     });
 
     // Notify both participants that the call has ended
@@ -196,9 +199,9 @@ export class CallService {
   ) {
     const { to } = data;
 
-    await prisma.conversation.updateMany({
-      where: { participants: { some: { userId: Number(socket.id) } } },
-      data: { lastMessageDate: new Date() },
+    await prisma.chat.updateMany({
+      where: { userSocket: socket.id },
+      data: { state: ChatState.NOT_ANSWERED },
     });
 
     // Relay the answer back to the admin that the call is not active
@@ -246,6 +249,6 @@ export class CallService {
 
     // Relay the answer back to the caller
     this.io.to(to).emit("call_unmuted");
-    console.log(`Call unmuted sent to: ${to}`);
+    console.log(`Call  unmuted sent to: ${to}`);
   }
 }

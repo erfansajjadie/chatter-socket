@@ -162,9 +162,10 @@ export class ChatController extends BaseController {
 
   @Post("/contacts")
   async getContacts(@Body() dto: ContactDto) {
-    const users = await prisma.user.findMany({
+    /* {
       where: { mobile: { in: dto.mobiles } },
-    });
+    } */
+    const users = await prisma.user.findMany();
     return { data: mapper(users, userMapper) };
   }
 }
