@@ -23,7 +23,7 @@ export class CallService {
         data,
       )}`,
     );
-    const { receiverId, callType, offer } = data;
+    const { receiverId, callType, offer, conversationId } = data;
 
     const receiver = await prisma.user.findUnique({
       where: { id: receiverId },
@@ -37,9 +37,9 @@ export class CallService {
 
     const call = await prisma.call.create({
       data: {
-        callerId: socket.data.userId,
+        callerId: receiverId,
         receiverId,
-        conversationId: data.conversationId,
+        conversationId: conversationId,
         callType,
       },
     });
@@ -47,8 +47,8 @@ export class CallService {
     await prisma.message.create({
       data: {
         text: "Call started",
-        userId: socket.data.userId,
-        conversationId: data.conversationId,
+        userId: receiverId,
+        conversationId: conversationId,
         type: "INFO",
       },
     });
