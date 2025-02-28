@@ -26,7 +26,7 @@ class CallService {
     handleInitiateCall(socket, data) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log(`Initiating call from socket: ${socket.id} with data: ${JSON.stringify(data)}`);
-            const { receiverId, callType, offer, conversationId } = data;
+            const { receiverId, callerId, callType, offer, conversationId } = data;
             const receiver = yield prisma_1.prisma.user.findUnique({
                 where: { id: receiverId },
             });
@@ -37,7 +37,7 @@ class CallService {
             }
             const call = yield prisma_1.prisma.call.create({
                 data: {
-                    callerId: receiverId,
+                    callerId,
                     receiverId,
                     conversationId: conversationId,
                     callType,
@@ -46,7 +46,7 @@ class CallService {
             yield prisma_1.prisma.message.create({
                 data: {
                     text: "Call started",
-                    userId: receiverId,
+                    userId: callerId,
                     conversationId: conversationId,
                     type: "INFO",
                 },
