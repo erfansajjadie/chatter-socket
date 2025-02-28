@@ -16,6 +16,7 @@ class CallService {
         this.io = io;
     }
     setupSignaling(socket) {
+        console.log(`Setting up signaling for socket: ${socket.id}`);
         socket.on("initiate_call", (data) => this.handleInitiateCall(socket, data));
         socket.on("offer", (data) => this.handleOffer(socket, data));
         socket.on("answer", (data) => this.handleAnswer(socket, data));
@@ -24,11 +25,13 @@ class CallService {
     }
     handleInitiateCall(socket, data) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log(`Initiating call from socket: ${socket.id} with data: ${JSON.stringify(data)}`);
             const { receiverId, callType, offer } = data;
             const receiver = yield prisma_1.prisma.user.findUnique({
                 where: { id: receiverId },
             });
             if (!receiver || !receiver.socketId) {
+                console.warn(`Receiver not available for socket: ${socket.id}`);
                 socket.emit("call_error", { message: "Receiver not available" });
                 return;
             }
@@ -48,6 +51,7 @@ class CallService {
                     type: "INFO",
                 },
             });
+            console.log(`Call initiated with ID: ${call.id} from socket: ${socket.id} to receiver socket: ${receiver.socketId}`);
             this.io.to(receiver.socketId).emit("incoming_call", {
                 from: socket.id,
                 callType,
@@ -58,19 +62,23 @@ class CallService {
         });
     }
     handleOffer(socket, data) {
+        console.log(`Handling offer from socket: ${socket.id} to: ${data.to}`);
         const { offer, to } = data;
         this.io.to(to).emit("offer", { offer, from: socket.id });
     }
     handleAnswer(socket, data) {
+        console.log(`Handling answer from socket: ${socket.id} to: ${data.to}`);
         const { answer, to } = data;
         this.io.to(to).emit("answer", { answer, from: socket.id });
     }
     handleIceCandidate(socket, data) {
+        console.log(`Handling ICE candidate from socket: ${socket.id} to: ${data.to}`);
         const { candidate, to } = data;
         this.io.to(to).emit("ice-candidate", { candidate, from: socket.id });
     }
     handleEndCall(socket, data) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log(`Ending call with ID: ${data.callId} from socket: ${socket.id}`);
             const { callId } = data;
             yield prisma_1.prisma.call.update({
                 where: { id: callId },
@@ -89,6 +97,7 @@ class CallService {
                         type: "INFO",
                     },
                 });
+                console.log(`Call with ID: ${callId} ended. Notifying caller and receiver.`);
                 if (call.caller.socketId) {
                     this.io.to(call.caller.socketId).emit("call_ended", { callId });
                 }
