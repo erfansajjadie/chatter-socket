@@ -1,12 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.messageMapper = exports.conversationMapper = exports.userMapper = exports.mapper = void 0;
+exports.mapper = mapper;
+exports.userMapper = userMapper;
+exports.conversationMapper = conversationMapper;
+exports.messageMapper = messageMapper;
 const client_1 = require("@prisma/client");
 const functions_1 = require("./functions");
 function mapper(list, mappingFunction) {
     return list.map(mappingFunction);
 }
-exports.mapper = mapper;
 function userMapper(user) {
     return {
         id: user.id,
@@ -15,7 +17,6 @@ function userMapper(user) {
         avatar: (0, functions_1.getFileUrl)(user.avatar),
     };
 }
-exports.userMapper = userMapper;
 function conversationMapper(data, userId) {
     var _a;
     let name;
@@ -38,7 +39,6 @@ function conversationMapper(data, userId) {
         ? { lastMessage: messageMapper(data.messages[0]) }
         : null));
 }
-exports.conversationMapper = conversationMapper;
 function messageMapper(data) {
     return {
         id: data.id,
@@ -54,4 +54,3 @@ function messageMapper(data) {
         senderAvatar: (0, functions_1.getFileUrl)(data.user.avatar),
     };
 }
-exports.messageMapper = messageMapper;

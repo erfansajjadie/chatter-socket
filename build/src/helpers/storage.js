@@ -12,7 +12,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadBase64 = exports.fileUploadOptions = exports.uploadOptions = void 0;
+exports.fileUploadOptions = exports.uploadOptions = void 0;
+exports.uploadBase64 = uploadBase64;
 const basic_ftp_1 = require("basic-ftp");
 const multer_1 = __importDefault(require("multer"));
 const stream_1 = require("stream");
@@ -76,4 +77,3 @@ function uploadBase64(file, type) {
         }
     });
 }
-exports.uploadBase64 = uploadBase64;

@@ -18,7 +18,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MatchConstraint = exports.Match = exports.Unique = exports.Exists = void 0;
 const class_validator_1 = require("class-validator");
 const prisma_1 = require("./prisma");
-let Exists = exports.Exists = class Exists {
+let Exists = class Exists {
     validate(value, args) {
         return __awaiter(this, void 0, void 0, function* () {
             const [model, field] = args.constraints;
@@ -37,10 +37,11 @@ let Exists = exports.Exists = class Exists {
         return `${field} '${args.value}' does not exist in ${model} database!`;
     }
 };
+exports.Exists = Exists;
 exports.Exists = Exists = __decorate([
     (0, class_validator_1.ValidatorConstraint)({ name: "exists", async: true })
 ], Exists);
-let Unique = exports.Unique = class Unique {
+let Unique = class Unique {
     validate(value, args) {
         return __awaiter(this, void 0, void 0, function* () {
             const [model, field] = args.constraints;
@@ -59,6 +60,7 @@ let Unique = exports.Unique = class Unique {
         return `${field} '${args.value}' از قبل وجود دارد ${model}`;
     }
 };
+exports.Unique = Unique;
 exports.Unique = Unique = __decorate([
     (0, class_validator_1.ValidatorConstraint)({ name: "unique", async: true })
 ], Unique);
@@ -74,7 +76,7 @@ const Match = (type, property, validationOptions) => {
     };
 };
 exports.Match = Match;
-let MatchConstraint = exports.MatchConstraint = class MatchConstraint {
+let MatchConstraint = class MatchConstraint {
     validate(value, args) {
         const [fn] = args.constraints;
         return fn(args.object) === value;
@@ -84,6 +86,7 @@ let MatchConstraint = exports.MatchConstraint = class MatchConstraint {
         return `${constraintProperty} and ${args.property} does not match`;
     }
 };
+exports.MatchConstraint = MatchConstraint;
 exports.MatchConstraint = MatchConstraint = __decorate([
     (0, class_validator_1.ValidatorConstraint)({ name: "Match" })
 ], MatchConstraint);

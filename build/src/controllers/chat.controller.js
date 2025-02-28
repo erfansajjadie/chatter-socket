@@ -33,13 +33,13 @@ const prisma_1 = require("../helpers/prisma");
 const storage_1 = require("../helpers/storage");
 const mappers_1 = require("../helpers/mappers");
 const contact_dto_1 = require("../entities/contact.dto");
-let ChatController = exports.ChatController = class ChatController extends base_controller_1.default {
+let ChatController = class ChatController extends base_controller_1.default {
     createConversation(dto, file) {
         const _super = Object.create(null, {
             ok: { get: () => super.ok }
         });
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             const { type, participants, name } = dto;
             const image = (_a = file === null || file === void 0 ? void 0 : file.path) === null || _a === void 0 ? void 0 : _a.replace("public_html/", "");
             if (type == client_1.ConversationType.PRIVATE) {
@@ -173,6 +173,7 @@ let ChatController = exports.ChatController = class ChatController extends base_
         });
     }
 };
+exports.ChatController = ChatController;
 __decorate([
     (0, routing_controllers_1.Post)("/create/conversation"),
     __param(0, (0, routing_controllers_1.Body)()),

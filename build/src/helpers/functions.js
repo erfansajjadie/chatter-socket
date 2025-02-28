@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTimeFormat = exports.getFileUrl = void 0;
+exports.getFileUrl = getFileUrl;
+exports.getTimeFormat = getTimeFormat;
 function getFileUrl(url) {
     if (!url) {
         return null;
     }
     return `${process.env.CDN_HOST}/${url}`;
 }
-exports.getFileUrl = getFileUrl;
 function getTimeFormat(inputDate) {
     const today = new Date();
     if (isSameDay(inputDate, today)) {
@@ -37,7 +37,6 @@ function getTimeFormat(inputDate) {
         });
     }
 }
-exports.getTimeFormat = getTimeFormat;
 function isSameDay(date1, date2) {
     return (date1.getDate() === date2.getDate() &&
         date1.getMonth() === date2.getMonth() &&

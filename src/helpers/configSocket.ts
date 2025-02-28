@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import { MessageType } from "@prisma/client";
 import { uploadBase64 } from "./storage";
 import { messageMapper, userMapper } from "./mappers";
+import { CallService } from "./callSockets";
 
 function configureSocket(server: http.Server) {
   const io = new Server(server, {
@@ -12,8 +13,12 @@ function configureSocket(server: http.Server) {
     },
   });
 
+  const callService = new CallService(io);
+
   io.on("connection", async (socket: Socket) => {
     console.log("A user connected:", socket.id);
+
+    callService.setupSignaling(socket);
 
     // Update user status to online
     const userId = socket.handshake.query.userId;

@@ -34,7 +34,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const login_dto_1 = require("../entities/login.dto");
 const mappers_1 = require("../helpers/mappers");
 const secretKey = process.env.SECRET_KEY;
-let AuthController = exports.AuthController = class AuthController extends base_controller_1.default {
+let AuthController = class AuthController extends base_controller_1.default {
     register(dto, file) {
         return __awaiter(this, void 0, void 0, function* () {
             if (file) {
@@ -72,6 +72,7 @@ let AuthController = exports.AuthController = class AuthController extends base_
         });
     }
 };
+exports.AuthController = AuthController;
 __decorate([
     (0, routing_controllers_1.Post)("/register"),
     __param(0, (0, routing_controllers_1.Body)()),

@@ -8,7 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GlobalErrorHandler = void 0;
 const routing_controllers_1 = require("routing-controllers");
-let GlobalErrorHandler = exports.GlobalErrorHandler = class GlobalErrorHandler {
+let GlobalErrorHandler = class GlobalErrorHandler {
     error(error, _req, res, _next) {
         if (error.httpCode) {
             res.status(error.httpCode);
@@ -33,6 +33,7 @@ let GlobalErrorHandler = exports.GlobalErrorHandler = class GlobalErrorHandler {
         res.json(response);
     }
 };
+exports.GlobalErrorHandler = GlobalErrorHandler;
 exports.GlobalErrorHandler = GlobalErrorHandler = __decorate([
     (0, routing_controllers_1.Middleware)({ type: "after" })
 ], GlobalErrorHandler);

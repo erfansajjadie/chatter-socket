@@ -6,6 +6,8 @@ import { createExpressServer } from "routing-controllers";
 import { GlobalErrorHandler } from "./src/middlewares/errorHandler";
 import { userMiddleware } from "./src/middlewares/userMiddleware";
 import dotenv from "dotenv";
+import * as admin from "firebase-admin";
+import serviceAccount from "./firebase.json";
 
 dotenv.config();
 dotenv.config({ path: `.env.local`, override: true });
@@ -22,6 +24,10 @@ const app = createExpressServer({
 const port = process.env.PORT || 3000;
 
 const server = http.createServer(app);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+});
 
 configureSocket(server);
 

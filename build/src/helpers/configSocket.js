@@ -14,14 +14,17 @@ const prisma_1 = require("./prisma");
 const client_1 = require("@prisma/client");
 const storage_1 = require("./storage");
 const mappers_1 = require("./mappers");
+const callSockets_1 = require("./callSockets");
 function configureSocket(server) {
     const io = new socket_io_1.Server(server, {
         cors: {
             origin: "*",
         },
     });
+    const callService = new callSockets_1.CallService(io);
     io.on("connection", (socket) => __awaiter(this, void 0, void 0, function* () {
         console.log("A user connected:", socket.id);
+        callService.setupSignaling(socket);
         // Update user status to online
         const userId = socket.handshake.query.userId;
         if (userId) {

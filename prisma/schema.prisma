@@ -11,17 +11,19 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  name         String
-  mobile       String        @unique
-  avatar       String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  pushToken    String?
-  messages     Message[]
-  isOnline     Boolean        @default(false)
-  socketId     String?
-  participants Participant[]
+  id            Int           @id @default(autoincrement())
+  name          String
+  mobile        String        @unique
+  avatar        String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  pushToken     String?
+  messages      Message[]
+  isOnline      Boolean       @default(false)
+  socketId      String?
+  participants  Participant[]
+  startedCalls  Call[]        @relation("Caller")
+  receivedCalls Call[]        @relation("Receiver")
 }
 
 model Conversation {
@@ -34,6 +36,7 @@ model Conversation {
   type            ConversationType
   messages        Message[]
   participants    Participant[]
+  calls           Call[]
 }
 
 model Message {
@@ -48,6 +51,21 @@ model Message {
   file           String?      @db.LongText
   isSeen         Boolean      @default(false)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model Call {
+  id             Int          @id @default(autoincrement())
+  callerId       Int
+  receiverId     Int
+  conversationId Int
+  callType       CallType
+  callStatus     CallStatus   @default(CALLING)
+  duration       Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  caller         User         @relation("Caller", fields: [callerId], references: [id], onDelete: Cascade)
+  receiver       User         @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }
 
@@ -71,4 +89,18 @@ enum MessageType {
   VOICE
   FILE
   IMAGE
+  INFO
+}
+
+enum CallType {
+  VOICE
+  VIDEO
+}
+
+enum CallStatus {
+  CALLING
+  RINGING
+  ACCEPTED
+  REJECTED
+  ENDED
 }
