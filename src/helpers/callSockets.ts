@@ -61,6 +61,7 @@ export class CallService {
       callType,
       offer,
       callId: call.id,
+      receiverId,
     });
 
     socket.emit("call_initiated", { callId: call.id });
