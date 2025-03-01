@@ -99,13 +99,20 @@ export class CallService {
 
     const call = await prisma.call.findUnique({
       where: { id: callId },
-      include: { caller: true },
+      include: { caller: true, receiver: true },
     });
 
-    if (call && call.caller.socketId) {
-      this.io
-        .to(call.caller.socketId)
-        .emit("answer", { answer, from: socket.id });
+    if (call) {
+      if (call.caller.socketId) {
+        this.io
+          .to(call.caller.socketId)
+          .emit("answer", { answer, from: socket.id });
+      }
+      if (call.receiver.socketId) {
+        this.io
+          .to(call.receiver.socketId)
+          .emit("answer", { answer, from: socket.id });
+      }
     }
   }
 
