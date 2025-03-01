@@ -63,19 +63,56 @@ class CallService {
         });
     }
     handleOffer(socket, data) {
-        console.log(`Handling offer from socket: ${socket.id} to: ${data.to}`);
-        const { offer, to } = data;
-        this.io.to(to).emit("offer", { offer, from: socket.id });
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log(`Handling offer from socket: ${socket.id} for callId: ${data.callId}`);
+            const { offer, callId } = data;
+            const call = yield prisma_1.prisma.call.findUnique({
+                where: { id: callId },
+                include: { receiver: true },
+            });
+            if (call && call.receiver.socketId) {
+                this.io
+                    .to(call.receiver.socketId)
+                    .emit("offer", { offer, from: socket.id });
+            }
+        });
     }
     handleAnswer(socket, data) {
-        console.log(`Handling answer from socket: ${socket.id} to: ${data.to}`);
-        const { answer, to } = data;
-        this.io.to(to).emit("answer", { answer, from: socket.id });
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log(`Handling answer from socket: ${socket.id} for callId: ${data.callId}`);
+            const { answer, callId } = data;
+            const call = yield prisma_1.prisma.call.findUnique({
+                where: { id: callId },
+                include: { caller: true },
+            });
+            if (call && call.caller.socketId) {
+                this.io
+                    .to(call.caller.socketId)
+                    .emit("answer", { answer, from: socket.id });
+            }
+        });
     }
     handleIceCandidate(socket, data) {
-        console.log(`Handling ICE candidate from socket: ${socket.id} to: ${data.to}`);
-        const { candidate, to } = data;
-        this.io.to(to).emit("ice-candidate", { candidate, from: socket.id });
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log(`Handling ICE candidate from socket: ${socket.id} for callId: ${data.callId}`);
+            const { candidate, callId } = data;
+            const call = yield prisma_1.prisma.call.findUnique({
+                where: { id: callId },
+                include: { caller: true, receiver: true },
+            });
+            if (call) {
+                if (call.caller.socketId && call.caller.socketId !== socket.id) {
+                    this.io
+                        .to(call.caller.socketId)
+                        .emit("ice-candidate", { candidate, from: socket.id });
+                }
+                if (call.receiver.socketId && call.receiver.socketId !== socket.id) {
+                    this.io
+                        .to(call.receiver.socketId)
+                        .emit("ice-candidate", { candidate, from: socket.id });
+                }
+            }
+        });
     }
     handleEndCall(socket, data) {
         return __awaiter(this, void 0, void 0, function* () {
