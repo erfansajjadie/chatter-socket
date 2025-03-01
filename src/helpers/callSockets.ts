@@ -13,7 +13,7 @@ export class CallService {
     socket.on("initiate_call", (data) => this.handleInitiateCall(socket, data));
     socket.on("offer", (data) => this.handleOffer(socket, data));
     socket.on("answer", (data) => this.handleAnswer(socket, data));
-    socket.on("ice-candidate", (data) => this.handleIceCandidate(socket, data));
+    socket.on("ice_candidate", (data) => this.handleIceCandidate(socket, data));
     socket.on("end_call", (data) => this.handleEndCall(socket, data));
   }
 
@@ -127,12 +127,12 @@ export class CallService {
       if (call.caller.socketId && call.caller.socketId !== socket.id) {
         this.io
           .to(call.caller.socketId)
-          .emit("ice-candidate", { candidate, from: socket.id });
+          .emit("ice_candidate", { candidate, from: socket.id });
       }
       if (call.receiver.socketId && call.receiver.socketId !== socket.id) {
         this.io
           .to(call.receiver.socketId)
-          .emit("ice-candidate", { candidate, from: socket.id });
+          .emit("ice_candidate", { candidate, from: socket.id });
       }
     }
   }
