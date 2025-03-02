@@ -70,17 +70,10 @@ class CallService {
                 where: { id: callId },
                 include: { caller: true, receiver: true },
             });
-            if (call) {
-                if (call.receiver.socketId) {
-                    this.io
-                        .to(call.receiver.socketId)
-                        .emit("offer", { offer, from: socket.id });
-                }
-                if (call.caller.socketId) {
-                    this.io
-                        .to(call.caller.socketId)
-                        .emit("offer", { offer, from: socket.id });
-                }
+            if (call && call.receiver.socketId) {
+                this.io
+                    .to(call.receiver.socketId)
+                    .emit("offer", { offer, from: socket.id });
             }
         });
     }
@@ -92,17 +85,10 @@ class CallService {
                 where: { id: callId },
                 include: { caller: true, receiver: true },
             });
-            if (call) {
-                if (call.caller.socketId) {
-                    this.io
-                        .to(call.caller.socketId)
-                        .emit("answer", { answer, from: socket.id });
-                }
-                if (call.receiver.socketId) {
-                    this.io
-                        .to(call.receiver.socketId)
-                        .emit("answer", { answer, from: socket.id });
-                }
+            if (call && call.caller.socketId) {
+                this.io
+                    .to(call.caller.socketId)
+                    .emit("answer", { answer, from: socket.id });
             }
         });
     }
@@ -141,14 +127,16 @@ class CallService {
                 include: { caller: true, receiver: true },
             });
             if (call) {
-                yield prisma_1.prisma.message.create({
-                    data: {
-                        text: "Call ended",
-                        userId: socket.data.userId,
-                        conversationId: call.conversationId,
-                        type: "INFO",
-                    },
-                });
+                if (socket.data.userId) {
+                    yield prisma_1.prisma.message.create({
+                        data: {
+                            text: "Call ended",
+                            userId: socket.data.userId,
+                            conversationId: call.conversationId,
+                            type: "INFO",
+                        },
+                    });
+                }
                 console.log(`Call with ID: ${callId} ended. Notifying caller and receiver.`);
                 if (call.caller.socketId) {
                     this.io.to(call.caller.socketId).emit("call_ended", { callId });

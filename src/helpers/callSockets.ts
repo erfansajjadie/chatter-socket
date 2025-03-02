@@ -81,17 +81,10 @@ export class CallService {
       include: { caller: true, receiver: true },
     });
 
-    if (call) {
-      if (call.receiver.socketId) {
-        this.io
-          .to(call.receiver.socketId)
-          .emit("offer", { offer, from: socket.id });
-      }
-      if (call.caller.socketId) {
-        this.io
-          .to(call.caller.socketId)
-          .emit("offer", { offer, from: socket.id });
-      }
+    if (call && call.receiver.socketId) {
+      this.io
+        .to(call.receiver.socketId)
+        .emit("offer", { offer, from: socket.id });
     }
   }
 
@@ -109,17 +102,10 @@ export class CallService {
       include: { caller: true, receiver: true },
     });
 
-    if (call) {
-      if (call.caller.socketId) {
-        this.io
-          .to(call.caller.socketId)
-          .emit("answer", { answer, from: socket.id });
-      }
-      if (call.receiver.socketId) {
-        this.io
-          .to(call.receiver.socketId)
-          .emit("answer", { answer, from: socket.id });
-      }
+    if (call && call.caller.socketId) {
+      this.io
+        .to(call.caller.socketId)
+        .emit("answer", { answer, from: socket.id });
     }
   }
 
@@ -168,14 +154,16 @@ export class CallService {
     });
 
     if (call) {
-      await prisma.message.create({
-        data: {
-          text: "Call ended",
-          userId: socket.data.userId,
-          conversationId: call.conversationId,
-          type: "INFO",
-        },
-      });
+      if (socket.data.userId) {
+        await prisma.message.create({
+          data: {
+            text: "Call ended",
+            userId: socket.data.userId,
+            conversationId: call.conversationId,
+            type: "INFO",
+          },
+        });
+      }
 
       console.log(
         `Call with ID: ${callId} ended. Notifying caller and receiver.`,
