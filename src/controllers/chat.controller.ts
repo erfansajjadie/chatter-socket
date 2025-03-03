@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   UploadedFile,
+  QueryParam,
 } from "routing-controllers";
 import { ConversationDto } from "../entities/conversation.dto";
 import { ConversationType, User } from "@prisma/client";
@@ -143,17 +144,28 @@ export class ChatController extends BaseController {
   }
 
   @Get("/conversation/:id/messages")
-  async getMessages(@Param("id") id: number) {
+  async getMessages(
+    @Param("id") id: number,
+    @QueryParam("userId") userId: number,
+  ) {
     const messages = await prisma.message.findMany({
       where: { conversationId: id },
       include: { user: true },
     });
-    const ids = messages.map((m) => m.id);
-    // update private messages is seen
-    await prisma.message.updateMany({
-      where: { id: { in: ids } },
-      data: { isSeen: true },
-    });
+
+    // Only mark messages as seen if they weren't sent by the current user
+    const messagesToMarkAsSeen = messages
+      .filter((m) => m.userId !== userId && !m.isSeen)
+      .map((m) => m.id);
+
+    // Update messages as seen if there are any to update
+    if (messagesToMarkAsSeen.length > 0) {
+      await prisma.message.updateMany({
+        where: { id: { in: messagesToMarkAsSeen } },
+        data: { isSeen: true },
+      });
+    }
+
     return {
       data: mapper(messages, messageMapper),
     };

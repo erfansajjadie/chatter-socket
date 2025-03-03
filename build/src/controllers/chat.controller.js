@@ -146,18 +146,23 @@ let ChatController = class ChatController extends base_controller_1.default {
             };
         });
     }
-    getMessages(id) {
+    getMessages(id, userId) {
         return __awaiter(this, void 0, void 0, function* () {
             const messages = yield prisma_1.prisma.message.findMany({
                 where: { conversationId: id },
                 include: { user: true },
             });
-            const ids = messages.map((m) => m.id);
-            // update private messages is seen
-            yield prisma_1.prisma.message.updateMany({
-                where: { id: { in: ids } },
-                data: { isSeen: true },
-            });
+            // Only mark messages as seen if they weren't sent by the current user
+            const messagesToMarkAsSeen = messages
+                .filter((m) => m.userId !== userId && !m.isSeen)
+                .map((m) => m.id);
+            // Update messages as seen if there are any to update
+            if (messagesToMarkAsSeen.length > 0) {
+                yield prisma_1.prisma.message.updateMany({
+                    where: { id: { in: messagesToMarkAsSeen } },
+                    data: { isSeen: true },
+                });
+            }
             return {
                 data: (0, mappers_1.mapper)(messages, mappers_1.messageMapper),
             };
@@ -192,8 +197,9 @@ __decorate([
 __decorate([
     (0, routing_controllers_1.Get)("/conversation/:id/messages"),
     __param(0, (0, routing_controllers_1.Param)("id")),
+    __param(1, (0, routing_controllers_1.QueryParam)("userId")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getMessages", null);
 __decorate([
