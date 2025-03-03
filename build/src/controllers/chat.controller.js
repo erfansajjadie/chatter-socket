@@ -32,7 +32,6 @@ const client_1 = require("@prisma/client");
 const prisma_1 = require("../helpers/prisma");
 const storage_1 = require("../helpers/storage");
 const mappers_1 = require("../helpers/mappers");
-const contact_dto_1 = require("../entities/contact.dto");
 let ChatController = class ChatController extends base_controller_1.default {
     createConversation(dto, file) {
         const _super = Object.create(null, {
@@ -168,7 +167,7 @@ let ChatController = class ChatController extends base_controller_1.default {
             };
         });
     }
-    getContacts(dto) {
+    getContacts() {
         return __awaiter(this, void 0, void 0, function* () {
             /* {
               where: { mobile: { in: dto.mobiles } },
@@ -204,9 +203,8 @@ __decorate([
 ], ChatController.prototype, "getMessages", null);
 __decorate([
     (0, routing_controllers_1.Post)("/contacts"),
-    __param(0, (0, routing_controllers_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [contact_dto_1.ContactDto]),
+    __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getContacts", null);
 exports.ChatController = ChatController = __decorate([

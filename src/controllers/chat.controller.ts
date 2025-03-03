@@ -172,7 +172,7 @@ export class ChatController extends BaseController {
   }
 
   @Post("/contacts")
-  async getContacts(@Body() dto: ContactDto) {
+  async getContacts() {
     /* {
       where: { mobile: { in: dto.mobiles } },
     } */
