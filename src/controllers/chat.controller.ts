@@ -32,6 +32,8 @@ export class ChatController extends BaseController {
 
     const image = file?.path?.replace("public_html/", "");
 
+    dto.userId = parseInt(dto.userId as any);
+
     if (type == ConversationType.PRIVATE) {
       const previousConversation = await prisma.conversation.findFirst({
         where: {

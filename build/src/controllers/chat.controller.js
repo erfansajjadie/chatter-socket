@@ -41,6 +41,7 @@ let ChatController = class ChatController extends base_controller_1.default {
             var _a;
             const { type, participants, name } = dto;
             const image = (_a = file === null || file === void 0 ? void 0 : file.path) === null || _a === void 0 ? void 0 : _a.replace("public_html/", "");
+            dto.userId = parseInt(dto.userId);
             if (type == client_1.ConversationType.PRIVATE) {
                 const previousConversation = yield prisma_1.prisma.conversation.findFirst({
                     where: {
