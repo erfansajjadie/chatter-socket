@@ -44,6 +44,7 @@ function messageMapper(data) {
         id: data.id,
         text: data.text,
         date: (0, functions_1.getTimeFormat)(data.createdAt),
+        dateTime: data.createdAt.toISOString(), // Add raw ISO date string for the client to parse
         senderName: data.user.name,
         conversationId: data.conversationId,
         type: data.type,
