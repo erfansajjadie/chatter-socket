@@ -71,8 +71,8 @@ let StorageController = class StorageController extends base_controller_1.defaul
         });
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // Define storage path
-                const uploadDir = path_1.default.join(__dirname, "..", "uploads");
+                // Define storage path at project root level
+                const uploadDir = path_1.default.join(__dirname, "..", "..", "uploads");
                 if (!fs_1.default.existsSync(uploadDir)) {
                     fs_1.default.mkdirSync(uploadDir, { recursive: true });
                 }
