@@ -27,7 +27,7 @@ export class ConversationDto {
   userId: number;
 
   @IsOptional()
-  isPublic?: boolean = false;
+  isPublic?: string;
 
   @IsOptional()
   description: string;

@@ -105,7 +105,7 @@ export class ChatController extends BaseController {
         image,
         name,
         description: description || null,
-        isPublic: type === ConversationType.CHANNEL ? isPublic || false : null,
+        isPublic: type === ConversationType.CHANNEL ? isPublic == "true" : null,
       },
     });
 
