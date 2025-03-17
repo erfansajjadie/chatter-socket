@@ -11,8 +11,8 @@ export class StorageController extends BaseController {
   @Post("/upload")
   async uploadFile(@UploadedFile("file", { required: true }) file: any) {
     try {
-      // Define storage path
-      const uploadDir = path.join(__dirname, "..", "uploads");
+      // Define storage path at project root level
+      const uploadDir = path.join(__dirname, "..", "..", "uploads");
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
