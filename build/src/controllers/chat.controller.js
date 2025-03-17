@@ -42,7 +42,7 @@ let ChatController = class ChatController extends base_controller_1.default {
             let image = null;
             if (file) {
                 console.log("File received:", file);
-                image = (0, storage_1.saveFile)(image, "conversation_images");
+                image = (0, storage_1.saveFile)(file, "conversation_images");
             }
             dto.userId = parseInt(dto.userId);
             if (type == client_1.ConversationType.PRIVATE) {

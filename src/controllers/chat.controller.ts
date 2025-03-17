@@ -33,7 +33,7 @@ export class ChatController extends BaseController {
     let image = null;
     if (file) {
       console.log("File received:", file);
-      image = saveFile(image, "conversation_images");
+      image = saveFile(file, "conversation_images");
     }
 
     dto.userId = parseInt(dto.userId as any);
