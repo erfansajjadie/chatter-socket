@@ -34,7 +34,7 @@ function configureSocket(server: http.Server) {
 
     socket.on("sendMessage", async (data) => {
       try {
-        const { userId, conversationId, text, type, file } = data;
+        const { userId, conversationId, text, type, file, voiceDuration } = data;
 
         // Save the message to the database
         const message = await prisma.message.create({
@@ -44,7 +44,8 @@ function configureSocket(server: http.Server) {
             userId,
             conversationId,
             type,
-            file: file ? file : null,
+            file,
+            voiceDuration,
           },
         });
         const messageData = { message: messageMapper(message) };
