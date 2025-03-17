@@ -36,7 +36,10 @@ export function conversationMapper(data: ConversationFull, userId: number) {
   let isOnline = false;
   let receiverId;
 
-  if (data.type == ConversationType.GROUP) {
+  if (
+    data.type == ConversationType.GROUP ||
+    data.type == ConversationType.CHANNEL
+  ) {
     name = data.name;
     image = data.image;
   } else {

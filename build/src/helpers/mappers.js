@@ -23,7 +23,8 @@ function conversationMapper(data, userId) {
     let image;
     let isOnline = false;
     let receiverId;
-    if (data.type == client_1.ConversationType.GROUP) {
+    if (data.type == client_1.ConversationType.GROUP ||
+        data.type == client_1.ConversationType.CHANNEL) {
         name = data.name;
         image = data.image;
     }
