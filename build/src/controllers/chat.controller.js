@@ -30,17 +30,19 @@ const routing_controllers_1 = require("routing-controllers");
 const conversation_dto_1 = require("../entities/conversation.dto");
 const client_1 = require("@prisma/client");
 const prisma_1 = require("../helpers/prisma");
-const storage_1 = require("../helpers/storage");
 const mappers_1 = require("../helpers/mappers");
+const storage_1 = require("../helpers/storage");
 let ChatController = class ChatController extends base_controller_1.default {
     createConversation(dto, file) {
         const _super = Object.create(null, {
             ok: { get: () => super.ok }
         });
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
             const { type, participants, name, description, isPublic } = dto;
-            const image = (_a = file === null || file === void 0 ? void 0 : file.path) === null || _a === void 0 ? void 0 : _a.replace("public_html/", "");
+            let image = null;
+            if (file) {
+                image = (0, storage_1.saveFile)(image, "conversation_images");
+            }
             dto.userId = parseInt(dto.userId);
             if (type == client_1.ConversationType.PRIVATE) {
                 const previousConversation = yield prisma_1.prisma.conversation.findFirst({
@@ -412,7 +414,7 @@ exports.ChatController = ChatController;
 __decorate([
     (0, routing_controllers_1.Post)("/create/conversation"),
     __param(0, (0, routing_controllers_1.Body)()),
-    __param(1, (0, routing_controllers_1.UploadedFile)("image", { options: (0, storage_1.uploadOptions)("group-images") })),
+    __param(1, (0, routing_controllers_1.UploadedFile)("file")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [conversation_dto_1.ConversationDto, Object]),
     __metadata("design:returntype", Promise)

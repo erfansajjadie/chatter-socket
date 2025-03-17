@@ -4,10 +4,8 @@ import {
   Get,
   JsonController,
   Post,
-  UploadedFile,
 } from "routing-controllers";
 import BaseController from "./base.controller";
-import { uploadOptions } from "../helpers/storage";
 import { RegisterDto } from "../entities/register.dto";
 import { prisma } from "../helpers/prisma";
 import jwt from "jsonwebtoken";
@@ -20,14 +18,7 @@ const secretKey = process.env.SECRET_KEY;
 @JsonController("/auth")
 export class AuthController extends BaseController {
   @Post("/register")
-  async register(
-    @Body() dto: RegisterDto,
-    @UploadedFile("avatar", { options: uploadOptions("avatars") }) file: any,
-  ) {
-    if (file) {
-      dto.avatar = file.path.replace("public_html/", "");
-    }
-
+  async register(@Body() dto: RegisterDto) {
     const user = await prisma.user.create({
       data: {
         name: dto.name,

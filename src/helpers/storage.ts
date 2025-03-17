@@ -1,69 +1,36 @@
-import { Client } from "basic-ftp";
-import multer from "multer";
-import { Readable } from "stream";
+import * as fs from "fs";
+import * as path from "path";
+import * as crypto from "crypto";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const FTPStorage = require("multer-ftp");
-
-export const uploadOptions = (path: string) => ({
-  storage: new FTPStorage({
-    basepath: "",
-    ftp: {
-      host: process.env.FTP_HOST,
-      secure: false,
-      user: process.env.FTP_USER,
-      password: process.env.FTP_PASS,
-    },
-  }),
-});
-
-export const fileUploadOptions = () => ({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, "/"); // Set the destination folder to "avatars/"
-    },
-    filename: (req, file, cb) => {
-      cb(null, file.originalname); // Use the original filename
-    },
-  }),
-});
-
-export async function uploadBase64(file: string, type: string) {
-  const client = new Client();
-
+export function saveFile(file: any, subfolderName: string): string {
   try {
-    await client.access({
-      host: process.env.FTP_HOST,
-      user: process.env.FTP_USER,
-      password: process.env.FTP_PASS,
-      secure: false,
-    });
+    // Define the uploads directory and its subfolder
+    const baseUploadDir = path.join(__dirname, "..", "..", "uploads");
+    const subfolderPath = path.join(baseUploadDir, subfolderName);
 
-    const base64Data = file;
+    // Create the base uploads directory if it doesn't exist
+    if (!fs.existsSync(baseUploadDir)) {
+      fs.mkdirSync(baseUploadDir, { recursive: true });
+    }
 
-    // Decode Base64 to binary
-    const buffer = Buffer.from(base64Data, "base64");
+    // Create the subfolder if it doesn't exist
+    if (!fs.existsSync(subfolderPath)) {
+      fs.mkdirSync(subfolderPath, { recursive: true });
+    }
 
-    // Convert the Buffer to a Readable stream
-    const stream = new Readable();
-    stream.push(buffer);
-    stream.push(null); // End the stream
+    // Generate a random name for the file
+    const randomName = crypto.randomBytes(16).toString("hex"); // Generate 16-byte random name
+    const fileExtension = path.extname(file.originalname); // Get the file extension
+    const newFileName = `${randomName}${fileExtension}`; // Create new random file name with extension
 
-    const { FTP_URL } = process.env;
-    const timestamp = Date.now();
-    const path = "chat-files";
-    const filename = `${FTP_URL}${path}/${timestamp}.${type}`;
+    // Define file path and save the file
+    const filePath = path.join(subfolderPath, newFileName);
+    fs.writeFileSync(filePath, file.buffer);
 
-    // Upload the PDF to the FTP server
-    await client.uploadFrom(stream, filename);
-
-    console.log("Upload successful: " + filename);
-
-    return filename;
-  } catch (err) {
-    console.error("Error:", err);
-  } finally {
-    // Close the FTP connection
-    client.close();
+    // Generate file URL (relative to the uploads folder)
+    return `${subfolderName}/${newFileName}`;
+  } catch (error) {
+    console.error("Error saving file:", error);
+    throw new Error("Could not save the file.");
   }
 }

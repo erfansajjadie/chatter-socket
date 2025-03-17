@@ -27,7 +27,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const routing_controllers_1 = require("routing-controllers");
 const base_controller_1 = __importDefault(require("./base.controller"));
-const storage_1 = require("../helpers/storage");
 const register_dto_1 = require("../entities/register.dto");
 const prisma_1 = require("../helpers/prisma");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -35,11 +34,8 @@ const login_dto_1 = require("../entities/login.dto");
 const mappers_1 = require("../helpers/mappers");
 const secretKey = process.env.SECRET_KEY;
 let AuthController = class AuthController extends base_controller_1.default {
-    register(dto, file) {
+    register(dto) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (file) {
-                dto.avatar = file.path.replace("public_html/", "");
-            }
             const user = yield prisma_1.prisma.user.create({
                 data: {
                     name: dto.name,
@@ -76,9 +72,8 @@ exports.AuthController = AuthController;
 __decorate([
     (0, routing_controllers_1.Post)("/register"),
     __param(0, (0, routing_controllers_1.Body)()),
-    __param(1, (0, routing_controllers_1.UploadedFile)("avatar", { options: (0, storage_1.uploadOptions)("avatars") })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [register_dto_1.RegisterDto, Object]),
+    __metadata("design:paramtypes", [register_dto_1.RegisterDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([

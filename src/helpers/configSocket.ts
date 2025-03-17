@@ -1,8 +1,7 @@
 import { Server, Socket } from "socket.io";
 import http from "http";
 import { prisma } from "./prisma";
-import { MessageType, ParticipantRole } from "@prisma/client";
-import { uploadBase64 } from "./storage";
+import { MessageType } from "@prisma/client";
 import { messageMapper, userMapper } from "./mappers";
 import { CallService } from "./callSockets";
 

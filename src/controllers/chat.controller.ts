@@ -13,25 +13,27 @@ import {
 import { ConversationDto } from "../entities/conversation.dto";
 import { ConversationType, MessageType, ParticipantRole } from "@prisma/client";
 import { prisma } from "../helpers/prisma";
-import { uploadOptions } from "../helpers/storage";
 import {
   conversationMapper,
   mapper,
   messageMapper,
   userMapper,
 } from "../helpers/mappers";
+import { saveFile } from "../helpers/storage";
 
 @JsonController()
 export class ChatController extends BaseController {
   @Post("/create/conversation")
   async createConversation(
     @Body() dto: ConversationDto,
-    @UploadedFile("image", { options: uploadOptions("group-images") })
-    file: any,
+    @UploadedFile("file") file: any,
   ) {
     const { type, participants, name, description, isPublic } = dto;
 
-    const image = file?.path?.replace("public_html/", "");
+    let image = null;
+    if (file) {
+      image = saveFile(image, "conversation_images");
+    }
 
     dto.userId = parseInt(dto.userId as any);
 
