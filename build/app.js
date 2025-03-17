@@ -47,6 +47,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const admin = __importStar(require("firebase-admin"));
 const firebase_json_1 = __importDefault(require("./firebase.json"));
 const body_parser_1 = __importDefault(require("body-parser"));
+const express_1 = __importDefault(require("express"));
 dotenv_1.default.config();
 dotenv_1.default.config({ path: `.env.local`, override: true });
 const app = (0, routing_controllers_1.createExpressServer)({
@@ -60,6 +61,8 @@ const app = (0, routing_controllers_1.createExpressServer)({
 const port = process.env.PORT || 3000;
 app.use(body_parser_1.default.json({ limit: "50mb" }));
 app.use(body_parser_1.default.urlencoded({ limit: "50mb", extended: true }));
+// Serve files from the 'uploads' folder
+app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "uploads")));
 const server = http_1.default.createServer(app);
 admin.initializeApp({
     credential: admin.credential.cert(firebase_json_1.default),

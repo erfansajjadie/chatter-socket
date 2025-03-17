@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import * as admin from "firebase-admin";
 import serviceAccount from "./firebase.json";
 import bodyParser from "body-parser";
+import express from "express";
 
 dotenv.config();
 dotenv.config({ path: `.env.local`, override: true });
@@ -26,6 +27,9 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
+
+// Serve files from the 'uploads' folder
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const server = http.createServer(app);
 
