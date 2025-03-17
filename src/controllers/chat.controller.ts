@@ -32,6 +32,7 @@ export class ChatController extends BaseController {
 
     let image = null;
     if (file) {
+      console.log("File received:", file);
       image = saveFile(image, "conversation_images");
     }
 

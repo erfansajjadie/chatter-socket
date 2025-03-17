@@ -41,6 +41,7 @@ let ChatController = class ChatController extends base_controller_1.default {
             const { type, participants, name, description, isPublic } = dto;
             let image = null;
             if (file) {
+                console.log("File received:", file);
                 image = (0, storage_1.saveFile)(image, "conversation_images");
             }
             dto.userId = parseInt(dto.userId);
