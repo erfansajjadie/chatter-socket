@@ -58,7 +58,7 @@ function saveFile(file, subfolderName) {
         const filePath = path.join(subfolderPath, newFileName);
         fs.writeFileSync(filePath, file.buffer);
         // Generate file URL (relative to the uploads folder)
-        return `${subfolderName}/${newFileName}`;
+        return `uploads/${subfolderName}/${newFileName}`;
     }
     catch (error) {
         console.error("Error saving file:", error);

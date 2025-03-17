@@ -28,7 +28,7 @@ export function saveFile(file: any, subfolderName: string): string {
     fs.writeFileSync(filePath, file.buffer);
 
     // Generate file URL (relative to the uploads folder)
-    return `${subfolderName}/${newFileName}`;
+    return `uploads/${subfolderName}/${newFileName}`;
   } catch (error) {
     console.error("Error saving file:", error);
     throw new Error("Could not save the file.");
