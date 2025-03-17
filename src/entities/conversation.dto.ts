@@ -1,8 +1,8 @@
 import { ConversationType } from "@prisma/client";
 import {
-  IsArray,
   IsEnum,
   IsNotEmpty,
+  IsOptional,
   Validate,
   ValidateIf,
 } from "class-validator";
@@ -25,4 +25,10 @@ export class ConversationDto {
 
   @IsNotEmpty()
   userId: number;
+
+  @IsOptional()
+  isPublic?: boolean = false;
+
+  @IsOptional()
+  description: string;
 }

@@ -46,6 +46,7 @@ const userMiddleware_1 = require("./src/middlewares/userMiddleware");
 const dotenv_1 = __importDefault(require("dotenv"));
 const admin = __importStar(require("firebase-admin"));
 const firebase_json_1 = __importDefault(require("./firebase.json"));
+const body_parser_1 = __importDefault(require("body-parser"));
 dotenv_1.default.config();
 dotenv_1.default.config({ path: `.env.local`, override: true });
 const app = (0, routing_controllers_1.createExpressServer)({
@@ -57,6 +58,8 @@ const app = (0, routing_controllers_1.createExpressServer)({
     cors: true,
 });
 const port = process.env.PORT || 3000;
+app.use(body_parser_1.default.json({ limit: "50mb" }));
+app.use(body_parser_1.default.urlencoded({ limit: "50mb", extended: true }));
 const server = http_1.default.createServer(app);
 admin.initializeApp({
     credential: admin.credential.cert(firebase_json_1.default),

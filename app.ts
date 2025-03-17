@@ -8,6 +8,7 @@ import { userMiddleware } from "./src/middlewares/userMiddleware";
 import dotenv from "dotenv";
 import * as admin from "firebase-admin";
 import serviceAccount from "./firebase.json";
+import bodyParser from "body-parser";
 
 dotenv.config();
 dotenv.config({ path: `.env.local`, override: true });
@@ -22,6 +23,9 @@ const app = createExpressServer({
 });
 
 const port = process.env.PORT || 3000;
+
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 const server = http.createServer(app);
 

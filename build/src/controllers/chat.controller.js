@@ -39,7 +39,7 @@ let ChatController = class ChatController extends base_controller_1.default {
         });
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const { type, participants, name } = dto;
+            const { type, participants, name, description, isPublic } = dto;
             const image = (_a = file === null || file === void 0 ? void 0 : file.path) === null || _a === void 0 ? void 0 : _a.replace("public_html/", "");
             dto.userId = parseInt(dto.userId);
             if (type == client_1.ConversationType.PRIVATE) {
@@ -84,13 +84,16 @@ let ChatController = class ChatController extends base_controller_1.default {
             const conversation = yield prisma_1.prisma.conversation.create({
                 include: {
                     _count: {
-                        select: {
-                            messages: {
+                        select: Object.assign({ messages: {
                                 where: { userId: { not: dto.userId }, isSeen: false },
-                            },
-                        },
+                            } }, (type === client_1.ConversationType.CHANNEL
+                            ? { participants: true }
+                            : {})),
                     },
-                    participants: { take: 2, include: { user: true } },
+                    participants: {
+                        take: type === client_1.ConversationType.CHANNEL ? 5 : 2,
+                        include: { user: true },
+                    },
                     messages: {
                         orderBy: { id: "desc" },
                         take: 1,
@@ -101,23 +104,49 @@ let ChatController = class ChatController extends base_controller_1.default {
                     type,
                     image,
                     name,
+                    description: description || null,
+                    isPublic: type === client_1.ConversationType.CHANNEL ? isPublic || false : null,
                 },
             });
             // Create participants for the conversation
-            yield prisma_1.prisma.participant.createMany({
-                data: [
-                    {
+            if (type === client_1.ConversationType.CHANNEL) {
+                // For channels, add creator as owner
+                yield prisma_1.prisma.participant.create({
+                    data: {
+                        userId: dto.userId,
+                        conversationId: conversation.id,
+                        role: "OWNER",
+                    },
+                });
+                // Create welcome message for channel
+                yield prisma_1.prisma.message.create({
+                    data: {
+                        text: `Channel "${name}" has been created`,
+                        type: client_1.MessageType.INFO,
                         userId: dto.userId,
                         conversationId: conversation.id,
                     },
-                    ...participants.map((p) => {
-                        return {
-                            userId: p,
+                });
+            }
+            else {
+                // For regular conversations and groups
+                yield prisma_1.prisma.participant.createMany({
+                    data: [
+                        {
+                            userId: dto.userId,
                             conversationId: conversation.id,
-                        };
-                    }),
-                ],
-            });
+                            role: type === client_1.ConversationType.GROUP ? "OWNER" : "MEMBER",
+                        },
+                        ...participants.map((p) => {
+                            return {
+                                userId: p,
+                                conversationId: conversation.id,
+                                role: client_1.ParticipantRole.MEMBER,
+                            };
+                        }),
+                    ],
+                });
+            }
             return _super.ok.call(this, {
                 conversation: (0, mappers_1.conversationMapper)(conversation, dto.userId),
             });
@@ -134,13 +163,25 @@ let ChatController = class ChatController extends base_controller_1.default {
                     _count: {
                         select: {
                             messages: { where: { userId: { not: userId }, isSeen: false } },
+                            participants: true,
                         },
                     },
-                    participants: { take: 2, include: { user: true } },
+                    participants: {
+                        take: 5, // Increased to handle channels with more participants
+                        include: { user: true },
+                    },
                     messages: { orderBy: { id: "desc" }, take: 1, include: { user: true } },
                 },
             });
-            const data = conversations.filter((c) => c.type == client_1.ConversationType.GROUP ? true : c.messages.length > 0);
+            // Filter conversations based on type
+            const data = conversations.filter((c) => {
+                if (c.type === client_1.ConversationType.CHANNEL ||
+                    c.type === client_1.ConversationType.GROUP) {
+                    return true;
+                }
+                // For private conversations, only include them if they have messages
+                return c.messages.length > 0;
+            });
             return {
                 data: data.map((c) => (0, mappers_1.conversationMapper)(c, userId)),
             };
@@ -177,6 +218,195 @@ let ChatController = class ChatController extends base_controller_1.default {
             return { data: (0, mappers_1.mapper)(users, mappers_1.userMapper) };
         });
     }
+    joinChannel(channelId_1, _a) {
+        const _super = Object.create(null, {
+            error: { get: () => super.error },
+            ok: { get: () => super.ok }
+        });
+        return __awaiter(this, arguments, void 0, function* (channelId, { userId }) {
+            // Check if user is already a participant
+            const existingParticipant = yield prisma_1.prisma.participant.findFirst({
+                where: {
+                    userId,
+                    conversationId: channelId,
+                },
+            });
+            if (existingParticipant) {
+                return _super.error.call(this, "User is already a member of this channel");
+            }
+            // Get channel details
+            const channel = yield prisma_1.prisma.conversation.findUnique({
+                where: { id: channelId },
+                include: { participants: true },
+            });
+            if (!channel) {
+                return _super.error.call(this, "Channel not found");
+            }
+            if (channel.type !== client_1.ConversationType.CHANNEL) {
+                return _super.error.call(this, "This conversation is not a channel");
+            }
+            if (!channel.isPublic) {
+                return _super.error.call(this, "This channel is private, invitation is required");
+            }
+            // Add user as participant with MEMBER role
+            const participant = yield prisma_1.prisma.participant.create({
+                data: {
+                    userId,
+                    conversationId: channelId,
+                    role: "MEMBER",
+                },
+                include: { user: true },
+            });
+            // Add system message that user joined
+            yield prisma_1.prisma.message.create({
+                data: {
+                    text: `User ${participant.user.name} joined the channel`,
+                    type: client_1.MessageType.INFO,
+                    userId,
+                    conversationId: channelId,
+                },
+            });
+            return _super.ok.call(this, {
+                success: true,
+                participant,
+            });
+        });
+    }
+    leaveChannel(channelId_1, _a) {
+        const _super = Object.create(null, {
+            error: { get: () => super.error },
+            ok: { get: () => super.ok }
+        });
+        return __awaiter(this, arguments, void 0, function* (channelId, { userId }) {
+            const participant = yield prisma_1.prisma.participant.findFirst({
+                where: {
+                    userId,
+                    conversationId: channelId,
+                },
+                include: { user: true },
+            });
+            if (!participant) {
+                return _super.error.call(this, "User is not a member of this channel");
+            }
+            // Check if user is the owner
+            if (participant.role === "OWNER") {
+                // Count other admins
+                const adminCount = yield prisma_1.prisma.participant.count({
+                    where: {
+                        conversationId: channelId,
+                        role: "ADMIN",
+                    },
+                });
+                if (adminCount === 0) {
+                    return _super.error.call(this, "Cannot leave channel: you are the owner and there are no admins to take over");
+                }
+                // Promote first admin to owner
+                const firstAdmin = yield prisma_1.prisma.participant.findFirst({
+                    where: {
+                        conversationId: channelId,
+                        role: "ADMIN",
+                    },
+                    include: { user: true },
+                });
+                if (firstAdmin) {
+                    yield prisma_1.prisma.participant.update({
+                        where: { id: firstAdmin.id },
+                        data: { role: "OWNER" },
+                    });
+                    // Add system message about ownership transfer
+                    yield prisma_1.prisma.message.create({
+                        data: {
+                            text: `${participant.user.name} transferred ownership to ${firstAdmin.user.name}`,
+                            type: client_1.MessageType.INFO,
+                            userId,
+                            conversationId: channelId,
+                        },
+                    });
+                }
+            }
+            // Add system message that user left
+            yield prisma_1.prisma.message.create({
+                data: {
+                    text: `${participant.user.name} left the channel`,
+                    type: client_1.MessageType.INFO,
+                    userId,
+                    conversationId: channelId,
+                },
+            });
+            // Remove participant
+            yield prisma_1.prisma.participant.delete({
+                where: { id: participant.id },
+            });
+            return _super.ok.call(this, {
+                success: true,
+            });
+        });
+    }
+    getChannelParticipants(channelId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const participants = yield prisma_1.prisma.participant.findMany({
+                where: {
+                    conversationId: channelId,
+                },
+                include: { user: true },
+            });
+            return {
+                data: participants.map((p) => (Object.assign(Object.assign({}, p), { user: (0, mappers_1.userMapper)(p.user) }))),
+            };
+        });
+    }
+    updateParticipantRole(channelId_1, _a) {
+        const _super = Object.create(null, {
+            error: { get: () => super.error },
+            ok: { get: () => super.ok }
+        });
+        return __awaiter(this, arguments, void 0, function* (channelId, { userId, targetUserId, newRole, }) {
+            // Check if the requesting user has permission
+            const requester = yield prisma_1.prisma.participant.findFirst({
+                where: {
+                    userId,
+                    conversationId: channelId,
+                },
+            });
+            if (!requester || !["OWNER", "ADMIN"].includes(requester.role)) {
+                return _super.error.call(this, "You don't have permission to change roles");
+            }
+            // Get target participant
+            const target = yield prisma_1.prisma.participant.findFirst({
+                where: {
+                    userId: targetUserId,
+                    conversationId: channelId,
+                },
+                include: { user: true },
+            });
+            if (!target) {
+                return _super.error.call(this, "Target user is not a member of this channel");
+            }
+            // Only owner can promote to admin or modify admin roles
+            if ((newRole === "ADMIN" || target.role === "ADMIN") &&
+                requester.role !== "OWNER") {
+                return _super.error.call(this, "Only the owner can promote to admin or modify admin roles");
+            }
+            // Update role
+            const updatedParticipant = yield prisma_1.prisma.participant.update({
+                where: { id: target.id },
+                data: { role: newRole },
+                include: { user: true },
+            });
+            // Add system message about role change
+            yield prisma_1.prisma.message.create({
+                data: {
+                    text: `${target.user.name}'s role changed to ${newRole}`,
+                    type: client_1.MessageType.INFO,
+                    userId,
+                    conversationId: channelId,
+                },
+            });
+            return _super.ok.call(this, {
+                participant: Object.assign(Object.assign({}, updatedParticipant), { user: (0, mappers_1.userMapper)(updatedParticipant.user) }),
+            });
+        });
+    }
 };
 exports.ChatController = ChatController;
 __decorate([
@@ -208,6 +438,37 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getContacts", null);
+__decorate([
+    (0, routing_controllers_1.Post)("/join/channel/:channelId"),
+    __param(0, (0, routing_controllers_1.Param)("channelId")),
+    __param(1, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "joinChannel", null);
+__decorate([
+    (0, routing_controllers_1.Delete)("/leave/channel/:channelId"),
+    __param(0, (0, routing_controllers_1.Param)("channelId")),
+    __param(1, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "leaveChannel", null);
+__decorate([
+    (0, routing_controllers_1.Get)("/channel/:channelId/participants"),
+    __param(0, (0, routing_controllers_1.Param)("channelId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "getChannelParticipants", null);
+__decorate([
+    (0, routing_controllers_1.Put)("/channel/:channelId/participant-role"),
+    __param(0, (0, routing_controllers_1.Param)("channelId")),
+    __param(1, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "updateParticipantRole", null);
 exports.ChatController = ChatController = __decorate([
     (0, routing_controllers_1.JsonController)()
 ], ChatController);

@@ -15,6 +15,9 @@ const class_validator_1 = require("class-validator");
 const validator_1 = require("../helpers/validator");
 const class_transformer_1 = require("class-transformer");
 class ConversationDto {
+    constructor() {
+        this.isPublic = false;
+    }
 }
 exports.ConversationDto = ConversationDto;
 __decorate([
@@ -37,3 +40,11 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", Number)
 ], ConversationDto.prototype, "userId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], ConversationDto.prototype, "isPublic", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ConversationDto.prototype, "description", void 0);
