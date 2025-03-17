@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const socket_io_1 = require("socket.io");
 const prisma_1 = require("./prisma");
 const client_1 = require("@prisma/client");
-const storage_1 = require("./storage");
 const mappers_1 = require("./mappers");
 const callSockets_1 = require("./callSockets");
 function configureSocket(server) {
@@ -37,7 +36,7 @@ function configureSocket(server) {
         }
         socket.on("sendMessage", (data) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const { userId, conversationId, text } = data;
+                const { userId, conversationId, text, type, file } = data;
                 // Save the message to the database
                 const message = yield prisma_1.prisma.message.create({
                     include: { user: true },
@@ -45,6 +44,8 @@ function configureSocket(server) {
                         text,
                         userId,
                         conversationId,
+                        type,
+                        file: file ? file : null,
                     },
                 });
                 const messageData = { message: (0, mappers_1.messageMapper)(message) };
@@ -111,40 +112,6 @@ function configureSocket(server) {
             socket
                 .to(`conversation_${conversationId}`)
                 .emit("seenMessage", { conversationId, userId });
-        }));
-        socket.on("sendFile", (data) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { userId, conversationId, file, fileType, type, voiceDuration } = data;
-                console.log(fileType);
-                if (!["FILE", "VOICE", "IMAGE"].includes(type)) {
-                    return;
-                }
-                const messageType = client_1.MessageType[type];
-                const result = yield (0, storage_1.uploadBase64)(file, fileType);
-                // Save the voice message to the database
-                const message = yield prisma_1.prisma.message.create({
-                    include: { user: true },
-                    data: {
-                        file: result === null || result === void 0 ? void 0 : result.replace("public_html/", ""),
-                        userId,
-                        text: "file",
-                        type: messageType,
-                        conversationId,
-                        voiceDuration,
-                    },
-                });
-                // Emit the voice message to the conversation room
-                const messageData = { message: (0, mappers_1.messageMapper)(message) };
-                // Emit the message to the conversation room, including the sender's socket
-                socket
-                    .to(`conversation_${conversationId}`)
-                    .emit("receiveMessage", messageData);
-                // Also emit the message to the sender's socket
-                socket.emit("receiveMessage", messageData);
-            }
-            catch (error) {
-                console.error("Error sending voice message:", error);
-            }
         }));
         // Channel-specific events
         socket.on("joinChannelRoom", (data) => __awaiter(this, void 0, void 0, function* () {

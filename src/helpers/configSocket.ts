@@ -34,7 +34,7 @@ function configureSocket(server: http.Server) {
 
     socket.on("sendMessage", async (data) => {
       try {
-        const { userId, conversationId, text } = data;
+        const { userId, conversationId, text, type, file } = data;
 
         // Save the message to the database
         const message = await prisma.message.create({
@@ -43,6 +43,8 @@ function configureSocket(server: http.Server) {
             text,
             userId,
             conversationId,
+            type,
+            file: file ? file : null,
           },
         });
         const messageData = { message: messageMapper(message) };
@@ -121,48 +123,6 @@ function configureSocket(server: http.Server) {
       socket
         .to(`conversation_${conversationId}`)
         .emit("seenMessage", { conversationId, userId });
-    });
-
-    socket.on("sendFile", async (data) => {
-      try {
-        const { userId, conversationId, file, fileType, type, voiceDuration } =
-          data;
-
-        console.log(fileType);
-
-        if (!["FILE", "VOICE", "IMAGE"].includes(type)) {
-          return;
-        }
-
-        const messageType = MessageType[type as keyof typeof MessageType];
-
-        const result = await uploadBase64(file, fileType);
-        // Save the voice message to the database
-        const message = await prisma.message.create({
-          include: { user: true },
-          data: {
-            file: result?.replace("public_html/", ""),
-            userId,
-            text: "file",
-            type: messageType,
-            conversationId,
-            voiceDuration,
-          },
-        });
-
-        // Emit the voice message to the conversation room
-        const messageData = { message: messageMapper(message) };
-
-        // Emit the message to the conversation room, including the sender's socket
-        socket
-          .to(`conversation_${conversationId}`)
-          .emit("receiveMessage", messageData);
-
-        // Also emit the message to the sender's socket
-        socket.emit("receiveMessage", messageData);
-      } catch (error) {
-        console.error("Error sending voice message:", error);
-      }
     });
 
     // Channel-specific events
