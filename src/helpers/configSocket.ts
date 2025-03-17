@@ -36,6 +36,8 @@ function configureSocket(server: http.Server) {
         const { userId, conversationId, text, type, file, voiceDuration } =
           data;
 
+        console.log("Received message:", data);  
+
         // Save the message to the database
         const message = await prisma.message.create({
           include: { user: true },
