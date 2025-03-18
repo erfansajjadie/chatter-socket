@@ -35,6 +35,8 @@ export function conversationMapper(data: ConversationFull, userId: number) {
   let image;
   let isOnline = false;
   let receiverId;
+  let ownerId;
+  let adminIds: number[] = [];
 
   if (
     data.type == ConversationType.GROUP ||
@@ -42,6 +44,17 @@ export function conversationMapper(data: ConversationFull, userId: number) {
   ) {
     name = data.name;
     image = data.image;
+    // Find the owner/admin of the group or channel
+    const admin = data.participants.find((p) => p.role === "OWNER");
+    ownerId = admin?.userId;
+
+    // Get all participants with admin roles (OWNER, ADMIN, MODERATOR)
+    adminIds = data.participants
+      .filter(
+        (p) =>
+          p.role === "OWNER" || p.role === "ADMIN" || p.role === "MODERATOR",
+      )
+      .map((p) => p.userId);
   } else {
     const receiver = data.participants.find((p) => p.userId != userId);
     name = receiver?.user.name;
@@ -57,8 +70,11 @@ export function conversationMapper(data: ConversationFull, userId: number) {
     type: data.type,
     isOnline,
     receiverId,
+    ownerId: ownerId,
+    adminIds: adminIds,
     lastOnlineTime: getTimeFormat(data.updatedAt),
     unreadCount: data._count.messages,
+    participantsCount: data.participants.length,
     ...(data.messages.length > 0
       ? { lastMessage: messageMapper(data.messages[0]) }
       : null),

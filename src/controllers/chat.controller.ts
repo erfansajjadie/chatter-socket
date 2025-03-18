@@ -221,6 +221,88 @@ export class ChatController extends BaseController {
     };
   }
 
+  @Post("/conversation/:conversationId/add-participant")
+  async addParticipant(
+    @Param("conversationId") conversationId: number,
+    @Body()
+    {
+      userId,
+      targetUserId,
+      role = "MEMBER",
+    }: { userId: number; targetUserId: number; role?: ParticipantRole },
+  ) {
+    // Check if the requesting user has permission
+    const requester = await prisma.participant.findFirst({
+      where: {
+        userId,
+        conversationId,
+      },
+      include: { conversation: true },
+    });
+
+    if (!requester) {
+      return super.error("You are not a participant of this conversation");
+    }
+
+    // For channels and groups, only owners and admins can add participants
+    if (
+      (requester.conversation.type === ConversationType.CHANNEL ||
+        requester.conversation.type === ConversationType.GROUP) &&
+      !["OWNER", "ADMIN"].includes(requester.role as string)
+    ) {
+      return super.error("You don't have permission to add participants");
+    }
+
+    // Check if target user is already a participant
+    const existingParticipant = await prisma.participant.findFirst({
+      where: {
+        userId: targetUserId,
+        conversationId,
+      },
+    });
+
+    if (existingParticipant) {
+      return super.error("User is already a participant of this conversation");
+    }
+
+    // Get target user details
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetUserId },
+    });
+
+    if (!targetUser) {
+      return super.error("Target user not found");
+    }
+
+    // Add participant with the specified role
+    const participant = await prisma.participant.create({
+      data: {
+        userId: targetUserId,
+        conversationId,
+        role,
+      },
+      include: { user: true },
+    });
+
+    // Add system message that user was added
+    await prisma.message.create({
+      data: {
+        text: `${targetUser.name} was added to the conversation`,
+        type: MessageType.INFO,
+        userId,
+        conversationId,
+      },
+    });
+
+    return super.ok({
+      success: true,
+      participant: {
+        ...participant,
+        user: userMapper(participant.user),
+      },
+    });
+  }
+
   @Post("/contacts")
   async getContacts() {
     /* {

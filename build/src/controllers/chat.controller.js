@@ -212,6 +212,70 @@ let ChatController = class ChatController extends base_controller_1.default {
             };
         });
     }
+    addParticipant(conversationId_1, _a) {
+        const _super = Object.create(null, {
+            error: { get: () => super.error },
+            ok: { get: () => super.ok }
+        });
+        return __awaiter(this, arguments, void 0, function* (conversationId, { userId, targetUserId, role = "MEMBER", }) {
+            // Check if the requesting user has permission
+            const requester = yield prisma_1.prisma.participant.findFirst({
+                where: {
+                    userId,
+                    conversationId,
+                },
+                include: { conversation: true },
+            });
+            if (!requester) {
+                return _super.error.call(this, "You are not a participant of this conversation");
+            }
+            // For channels and groups, only owners and admins can add participants
+            if ((requester.conversation.type === client_1.ConversationType.CHANNEL ||
+                requester.conversation.type === client_1.ConversationType.GROUP) &&
+                !["OWNER", "ADMIN"].includes(requester.role)) {
+                return _super.error.call(this, "You don't have permission to add participants");
+            }
+            // Check if target user is already a participant
+            const existingParticipant = yield prisma_1.prisma.participant.findFirst({
+                where: {
+                    userId: targetUserId,
+                    conversationId,
+                },
+            });
+            if (existingParticipant) {
+                return _super.error.call(this, "User is already a participant of this conversation");
+            }
+            // Get target user details
+            const targetUser = yield prisma_1.prisma.user.findUnique({
+                where: { id: targetUserId },
+            });
+            if (!targetUser) {
+                return _super.error.call(this, "Target user not found");
+            }
+            // Add participant with the specified role
+            const participant = yield prisma_1.prisma.participant.create({
+                data: {
+                    userId: targetUserId,
+                    conversationId,
+                    role,
+                },
+                include: { user: true },
+            });
+            // Add system message that user was added
+            yield prisma_1.prisma.message.create({
+                data: {
+                    text: `${targetUser.name} was added to the conversation`,
+                    type: client_1.MessageType.INFO,
+                    userId,
+                    conversationId,
+                },
+            });
+            return _super.ok.call(this, {
+                success: true,
+                participant: Object.assign(Object.assign({}, participant), { user: (0, mappers_1.userMapper)(participant.user) }),
+            });
+        });
+    }
     getContacts() {
         return __awaiter(this, void 0, void 0, function* () {
             /* {
@@ -435,6 +499,14 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getMessages", null);
+__decorate([
+    (0, routing_controllers_1.Post)("/conversation/:conversationId/add-participant"),
+    __param(0, (0, routing_controllers_1.Param)("conversationId")),
+    __param(1, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "addParticipant", null);
 __decorate([
     (0, routing_controllers_1.Post)("/contacts"),
     __metadata("design:type", Function),
