@@ -24,7 +24,7 @@ function configureSocket(server: http.Server) {
     if (userId) {
       await prisma.user.update({
         where: { id: Number(userId) },
-        data: { isOnline: true, socketId: socket.id },
+        data: { isOnline: true, socketId: socket.id, updatedAt: new Date() },
       });
 
       // Emit user online event

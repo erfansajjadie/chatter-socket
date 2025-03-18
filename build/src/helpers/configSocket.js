@@ -29,7 +29,7 @@ function configureSocket(server) {
         if (userId) {
             yield prisma_1.prisma.user.update({
                 where: { id: Number(userId) },
-                data: { isOnline: true, socketId: socket.id },
+                data: { isOnline: true, socketId: socket.id, updatedAt: new Date() },
             });
             // Emit user online event
             io.emit("userOnline", { userId: Number(userId) });
