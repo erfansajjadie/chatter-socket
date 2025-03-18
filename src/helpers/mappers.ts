@@ -57,6 +57,7 @@ export function conversationMapper(data: ConversationFull, userId: number) {
     type: data.type,
     isOnline,
     receiverId,
+    lastOnlineTime: getTimeFormat(data.updatedAt),
     unreadCount: data._count.messages,
     ...(data.messages.length > 0
       ? { lastMessage: messageMapper(data.messages[0]) }
