@@ -221,7 +221,7 @@ export class ChatController extends BaseController {
     };
   }
 
-  @Get("/get-participants/:id")
+  @Get("/conversation/:id/get-participants")
   async getConversationParticipants(@Param("id") id: number) {
     const participants = await prisma.participant.findMany({
       where: {
