@@ -198,10 +198,32 @@ export class ChatController extends BaseController {
     @Param("id") id: number,
     @QueryParam("userId") userId: number,
   ) {
-    const messages = await prisma.message.findMany({
-      where: { conversationId: id },
-      include: { user: true },
-    });
+    // Fetch both messages and conversation in parallel
+    const [messages, conversation] = await Promise.all([
+      prisma.message.findMany({
+        where: { conversationId: id },
+        include: { user: true },
+      }),
+      prisma.conversation.findUnique({
+        where: { id },
+        include: {
+          _count: {
+            select: {
+              messages: { where: { userId: { not: userId }, isSeen: false } },
+              participants: true,
+            },
+          },
+          participants: {
+            include: { user: true },
+          },
+          messages: {
+            orderBy: { id: "desc" },
+            take: 1,
+            include: { user: true },
+          },
+        },
+      }),
+    ]);
 
     // Only mark messages as seen if they weren't sent by the current user
     const messagesToMarkAsSeen = messages
@@ -218,6 +240,9 @@ export class ChatController extends BaseController {
 
     return {
       data: mapper(messages, messageMapper),
+      conversation: conversation
+        ? conversationMapper(conversation, userId)
+        : null,
     };
   }
 
@@ -236,6 +261,82 @@ export class ChatController extends BaseController {
         user: userMapper(p.user),
       })),
     };
+  }
+
+  @Delete("/channel/:channelId/remove-participant")
+  async removeParticipant(
+    @Param("channelId") channelId: number,
+    @Body()
+    { userId, targetUserId }: { userId: number; targetUserId: number },
+  ) {
+    // Check if the requesting user has permission
+    const requester = await prisma.participant.findFirst({
+      where: {
+        userId,
+        conversationId: channelId,
+      },
+      include: { conversation: true },
+    });
+
+    if (!requester) {
+      return super.error("You are not a participant of this channel");
+    }
+
+    // Verify this is a channel
+    if (requester.conversation.type !== ConversationType.CHANNEL) {
+      return super.error("This conversation is not a channel");
+    }
+
+    // Only owners and admins can remove participants
+    if (!["OWNER", "ADMIN"].includes(requester.role as string)) {
+      return super.error("You don't have permission to remove participants");
+    }
+
+    // Get target participant
+    const targetParticipant = await prisma.participant.findFirst({
+      where: {
+        userId: targetUserId,
+        conversationId: channelId,
+      },
+      include: { user: true },
+    });
+
+    if (!targetParticipant) {
+      return super.error("Target user is not a member of this channel");
+    }
+
+    // Cannot remove the owner
+    if (targetParticipant.role === "OWNER") {
+      return super.error("The channel owner cannot be removed");
+    }
+
+    // Admin cannot remove another admin
+    if (requester.role === "ADMIN" && targetParticipant.role === "ADMIN") {
+      return super.error("Admins cannot remove other admins");
+    }
+
+    // Add system message that user was removed
+    await prisma.message.create({
+      data: {
+        text: `${targetParticipant.user.name} was removed from the channel`,
+        type: MessageType.INFO,
+        userId,
+        conversationId: channelId,
+      },
+    });
+
+    // Remove participant
+    await prisma.participant.delete({
+      where: { id: targetParticipant.id },
+    });
+
+    return super.ok({
+      success: true,
+      removedParticipant: {
+        ...targetParticipant,
+        user: userMapper(targetParticipant.user),
+      },
+    });
   }
 
   @Post("/conversation/:conversationId/add-participant")

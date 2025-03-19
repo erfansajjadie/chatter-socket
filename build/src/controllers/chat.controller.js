@@ -192,10 +192,32 @@ let ChatController = class ChatController extends base_controller_1.default {
     }
     getMessages(id, userId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const messages = yield prisma_1.prisma.message.findMany({
-                where: { conversationId: id },
-                include: { user: true },
-            });
+            // Fetch both messages and conversation in parallel
+            const [messages, conversation] = yield Promise.all([
+                prisma_1.prisma.message.findMany({
+                    where: { conversationId: id },
+                    include: { user: true },
+                }),
+                prisma_1.prisma.conversation.findUnique({
+                    where: { id },
+                    include: {
+                        _count: {
+                            select: {
+                                messages: { where: { userId: { not: userId }, isSeen: false } },
+                                participants: true,
+                            },
+                        },
+                        participants: {
+                            include: { user: true },
+                        },
+                        messages: {
+                            orderBy: { id: "desc" },
+                            take: 1,
+                            include: { user: true },
+                        },
+                    },
+                }),
+            ]);
             // Only mark messages as seen if they weren't sent by the current user
             const messagesToMarkAsSeen = messages
                 .filter((m) => m.userId !== userId && !m.isSeen)
@@ -209,6 +231,9 @@ let ChatController = class ChatController extends base_controller_1.default {
             }
             return {
                 data: (0, mappers_1.mapper)(messages, mappers_1.messageMapper),
+                conversation: conversation
+                    ? (0, mappers_1.conversationMapper)(conversation, userId)
+                    : null,
             };
         });
     }
@@ -223,6 +248,69 @@ let ChatController = class ChatController extends base_controller_1.default {
             return {
                 data: participants.map((p) => (Object.assign(Object.assign({}, p), { user: (0, mappers_1.userMapper)(p.user) }))),
             };
+        });
+    }
+    removeParticipant(channelId_1, _a) {
+        const _super = Object.create(null, {
+            error: { get: () => super.error },
+            ok: { get: () => super.ok }
+        });
+        return __awaiter(this, arguments, void 0, function* (channelId, { userId, targetUserId }) {
+            // Check if the requesting user has permission
+            const requester = yield prisma_1.prisma.participant.findFirst({
+                where: {
+                    userId,
+                    conversationId: channelId,
+                },
+                include: { conversation: true },
+            });
+            if (!requester) {
+                return _super.error.call(this, "You are not a participant of this channel");
+            }
+            // Verify this is a channel
+            if (requester.conversation.type !== client_1.ConversationType.CHANNEL) {
+                return _super.error.call(this, "This conversation is not a channel");
+            }
+            // Only owners and admins can remove participants
+            if (!["OWNER", "ADMIN"].includes(requester.role)) {
+                return _super.error.call(this, "You don't have permission to remove participants");
+            }
+            // Get target participant
+            const targetParticipant = yield prisma_1.prisma.participant.findFirst({
+                where: {
+                    userId: targetUserId,
+                    conversationId: channelId,
+                },
+                include: { user: true },
+            });
+            if (!targetParticipant) {
+                return _super.error.call(this, "Target user is not a member of this channel");
+            }
+            // Cannot remove the owner
+            if (targetParticipant.role === "OWNER") {
+                return _super.error.call(this, "The channel owner cannot be removed");
+            }
+            // Admin cannot remove another admin
+            if (requester.role === "ADMIN" && targetParticipant.role === "ADMIN") {
+                return _super.error.call(this, "Admins cannot remove other admins");
+            }
+            // Add system message that user was removed
+            yield prisma_1.prisma.message.create({
+                data: {
+                    text: `${targetParticipant.user.name} was removed from the channel`,
+                    type: client_1.MessageType.INFO,
+                    userId,
+                    conversationId: channelId,
+                },
+            });
+            // Remove participant
+            yield prisma_1.prisma.participant.delete({
+                where: { id: targetParticipant.id },
+            });
+            return _super.ok.call(this, {
+                success: true,
+                removedParticipant: Object.assign(Object.assign({}, targetParticipant), { user: (0, mappers_1.userMapper)(targetParticipant.user) }),
+            });
         });
     }
     addParticipant(conversationId_1, _a) {
@@ -506,6 +594,14 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getConversationParticipants", null);
+__decorate([
+    (0, routing_controllers_1.Delete)("/channel/:channelId/remove-participant"),
+    __param(0, (0, routing_controllers_1.Param)("channelId")),
+    __param(1, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "removeParticipant", null);
 __decorate([
     (0, routing_controllers_1.Post)("/conversation/:conversationId/add-participant"),
     __param(0, (0, routing_controllers_1.Param)("conversationId")),
