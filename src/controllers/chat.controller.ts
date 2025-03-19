@@ -221,6 +221,23 @@ export class ChatController extends BaseController {
     };
   }
 
+  @Get("/get-participants/:id")
+  async getConversationParticipants(@Param("id") id: number) {
+    const participants = await prisma.participant.findMany({
+      where: {
+        conversationId: id,
+      },
+      include: { user: true },
+    });
+
+    return {
+      data: participants.map((p) => ({
+        ...p,
+        user: userMapper(p.user),
+      })),
+    };
+  }
+
   @Post("/conversation/:conversationId/add-participant")
   async addParticipant(
     @Param("conversationId") conversationId: number,
@@ -451,23 +468,6 @@ export class ChatController extends BaseController {
     return super.ok({
       success: true,
     });
-  }
-
-  @Get("/channel/:channelId/participants")
-  async getChannelParticipants(@Param("channelId") channelId: number) {
-    const participants = await prisma.participant.findMany({
-      where: {
-        conversationId: channelId,
-      },
-      include: { user: true },
-    });
-
-    return {
-      data: participants.map((p) => ({
-        ...p,
-        user: userMapper(p.user),
-      })),
-    };
   }
 
   @Put("/channel/:channelId/participant-role")

@@ -212,6 +212,19 @@ let ChatController = class ChatController extends base_controller_1.default {
             };
         });
     }
+    getConversationParticipants(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const participants = yield prisma_1.prisma.participant.findMany({
+                where: {
+                    conversationId: id,
+                },
+                include: { user: true },
+            });
+            return {
+                data: participants.map((p) => (Object.assign(Object.assign({}, p), { user: (0, mappers_1.userMapper)(p.user) }))),
+            };
+        });
+    }
     addParticipant(conversationId_1, _a) {
         const _super = Object.create(null, {
             error: { get: () => super.error },
@@ -409,19 +422,6 @@ let ChatController = class ChatController extends base_controller_1.default {
             });
         });
     }
-    getChannelParticipants(channelId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const participants = yield prisma_1.prisma.participant.findMany({
-                where: {
-                    conversationId: channelId,
-                },
-                include: { user: true },
-            });
-            return {
-                data: participants.map((p) => (Object.assign(Object.assign({}, p), { user: (0, mappers_1.userMapper)(p.user) }))),
-            };
-        });
-    }
     updateParticipantRole(channelId_1, _a) {
         const _super = Object.create(null, {
             error: { get: () => super.error },
@@ -500,6 +500,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getMessages", null);
 __decorate([
+    (0, routing_controllers_1.Get)("/get-participants/:id"),
+    __param(0, (0, routing_controllers_1.Param)("id")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "getConversationParticipants", null);
+__decorate([
     (0, routing_controllers_1.Post)("/conversation/:conversationId/add-participant"),
     __param(0, (0, routing_controllers_1.Param)("conversationId")),
     __param(1, (0, routing_controllers_1.Body)()),
@@ -529,13 +536,6 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "leaveChannel", null);
-__decorate([
-    (0, routing_controllers_1.Get)("/channel/:channelId/participants"),
-    __param(0, (0, routing_controllers_1.Param)("channelId")),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
-], ChatController.prototype, "getChannelParticipants", null);
 __decorate([
     (0, routing_controllers_1.Put)("/channel/:channelId/participant-role"),
     __param(0, (0, routing_controllers_1.Param)("channelId")),
