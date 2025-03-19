@@ -500,7 +500,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getMessages", null);
 __decorate([
-    (0, routing_controllers_1.Get)("/get-participants/:id"),
+    (0, routing_controllers_1.Get)("/conversation/:id/get-participants"),
     __param(0, (0, routing_controllers_1.Param)("id")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
