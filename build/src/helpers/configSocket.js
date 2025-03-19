@@ -61,6 +61,7 @@ function configureSocket(server) {
                     where: { id: conversationId },
                     data: { lastMessageDate: new Date() },
                 });
+                console.log("Message sent successfully at ", new Date());
             }
             catch (error) {
                 console.error("Error sending message:", error);
