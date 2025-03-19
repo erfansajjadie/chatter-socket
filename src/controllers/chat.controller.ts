@@ -106,6 +106,7 @@ export class ChatController extends BaseController {
         name,
         description: description || null,
         isPublic: type === ConversationType.CHANNEL ? isPublic == "true" : null,
+        lastMessageDate: new Date(),
       },
     });
 

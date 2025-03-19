@@ -109,6 +109,7 @@ let ChatController = class ChatController extends base_controller_1.default {
                     name,
                     description: description || null,
                     isPublic: type === client_1.ConversationType.CHANNEL ? isPublic == "true" : null,
+                    lastMessageDate: new Date(),
                 },
             });
             // Create participants for the conversation
