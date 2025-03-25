@@ -252,26 +252,27 @@ let ChatController = class ChatController extends base_controller_1.default {
             };
         });
     }
-    removeParticipant(channelId_1, _a) {
+    removeParticipant(conversationId_1, _a) {
         const _super = Object.create(null, {
             error: { get: () => super.error },
             ok: { get: () => super.ok }
         });
-        return __awaiter(this, arguments, void 0, function* (channelId, { userId, targetUserId }) {
+        return __awaiter(this, arguments, void 0, function* (conversationId, { userId, targetUserId }) {
             // Check if the requesting user has permission
             const requester = yield prisma_1.prisma.participant.findFirst({
                 where: {
                     userId,
-                    conversationId: channelId,
+                    conversationId,
                 },
                 include: { conversation: true },
             });
             if (!requester) {
-                return _super.error.call(this, "You are not a participant of this channel");
+                return _super.error.call(this, "You are not a participant of this conversation");
             }
-            // Verify this is a channel
-            if (requester.conversation.type !== client_1.ConversationType.CHANNEL) {
-                return _super.error.call(this, "This conversation is not a channel");
+            // Verify this is a channel or group
+            if (requester.conversation.type !== client_1.ConversationType.CHANNEL &&
+                requester.conversation.type !== client_1.ConversationType.GROUP) {
+                return _super.error.call(this, "This conversation does not support participant management");
             }
             // Only owners and admins can remove participants
             if (!["OWNER", "ADMIN"].includes(requester.role)) {
@@ -281,33 +282,43 @@ let ChatController = class ChatController extends base_controller_1.default {
             const targetParticipant = yield prisma_1.prisma.participant.findFirst({
                 where: {
                     userId: targetUserId,
-                    conversationId: channelId,
+                    conversationId,
                 },
                 include: { user: true },
             });
             if (!targetParticipant) {
-                return _super.error.call(this, "Target user is not a member of this channel");
+                return _super.error.call(this, "Target user is not a member of this conversation");
             }
             // Cannot remove the owner
             if (targetParticipant.role === "OWNER") {
-                return _super.error.call(this, "The channel owner cannot be removed");
+                return _super.error.call(this, "The conversation owner cannot be removed");
             }
             // Admin cannot remove another admin
             if (requester.role === "ADMIN" && targetParticipant.role === "ADMIN") {
                 return _super.error.call(this, "Admins cannot remove other admins");
             }
             // Add system message that user was removed
-            yield prisma_1.prisma.message.create({
+            const message = yield prisma_1.prisma.message.create({
                 data: {
-                    text: `${targetParticipant.user.name} was removed from the channel`,
+                    text: `${targetParticipant.user.name} was removed from the conversation`,
                     type: client_1.MessageType.INFO,
                     userId,
-                    conversationId: channelId,
+                    conversationId,
                 },
+                include: { user: true },
+            });
+            // Emit message via socket service
+            socketService_1.default.emitToConversation(conversationId, "receiveMessage", {
+                message: (0, mappers_1.messageMapper)(message),
             });
             // Remove participant
             yield prisma_1.prisma.participant.delete({
                 where: { id: targetParticipant.id },
+            });
+            // Update last message date
+            yield prisma_1.prisma.conversation.update({
+                where: { id: conversationId },
+                data: { lastMessageDate: new Date() },
             });
             return _super.ok.call(this, {
                 success: true,
@@ -575,8 +586,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getConversationParticipants", null);
 __decorate([
-    (0, routing_controllers_1.Delete)("/channel/:channelId/remove-participant"),
-    __param(0, (0, routing_controllers_1.Param)("channelId")),
+    (0, routing_controllers_1.Delete)("/conversation/:conversationId/remove-participant"),
+    __param(0, (0, routing_controllers_1.Param)("conversationId")),
     __param(1, (0, routing_controllers_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Object]),

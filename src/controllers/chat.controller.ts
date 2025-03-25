@@ -265,9 +265,9 @@ export class ChatController extends BaseController {
     };
   }
 
-  @Delete("/channel/:channelId/remove-participant")
+  @Delete("/conversation/:conversationId/remove-participant")
   async removeParticipant(
-    @Param("channelId") channelId: number,
+    @Param("conversationId") conversationId: number,
     @Body()
     { userId, targetUserId }: { userId: number; targetUserId: number },
   ) {
@@ -275,18 +275,23 @@ export class ChatController extends BaseController {
     const requester = await prisma.participant.findFirst({
       where: {
         userId,
-        conversationId: channelId,
+        conversationId,
       },
       include: { conversation: true },
     });
 
     if (!requester) {
-      return super.error("You are not a participant of this channel");
+      return super.error("You are not a participant of this conversation");
     }
 
-    // Verify this is a channel
-    if (requester.conversation.type !== ConversationType.CHANNEL) {
-      return super.error("This conversation is not a channel");
+    // Verify this is a channel or group
+    if (
+      requester.conversation.type !== ConversationType.CHANNEL &&
+      requester.conversation.type !== ConversationType.GROUP
+    ) {
+      return super.error(
+        "This conversation does not support participant management",
+      );
     }
 
     // Only owners and admins can remove participants
@@ -298,18 +303,18 @@ export class ChatController extends BaseController {
     const targetParticipant = await prisma.participant.findFirst({
       where: {
         userId: targetUserId,
-        conversationId: channelId,
+        conversationId,
       },
       include: { user: true },
     });
 
     if (!targetParticipant) {
-      return super.error("Target user is not a member of this channel");
+      return super.error("Target user is not a member of this conversation");
     }
 
     // Cannot remove the owner
     if (targetParticipant.role === "OWNER") {
-      return super.error("The channel owner cannot be removed");
+      return super.error("The conversation owner cannot be removed");
     }
 
     // Admin cannot remove another admin
@@ -318,18 +323,30 @@ export class ChatController extends BaseController {
     }
 
     // Add system message that user was removed
-    await prisma.message.create({
+    const message = await prisma.message.create({
       data: {
-        text: `${targetParticipant.user.name} was removed from the channel`,
+        text: `${targetParticipant.user.name} was removed from the conversation`,
         type: MessageType.INFO,
         userId,
-        conversationId: channelId,
+        conversationId,
       },
+      include: { user: true },
+    });
+
+    // Emit message via socket service
+    socketService.emitToConversation(conversationId, "receiveMessage", {
+      message: messageMapper(message),
     });
 
     // Remove participant
     await prisma.participant.delete({
       where: { id: targetParticipant.id },
+    });
+
+    // Update last message date
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { lastMessageDate: new Date() },
     });
 
     return super.ok({
