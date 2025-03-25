@@ -8,22 +8,27 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const socket_io_1 = require("socket.io");
 const prisma_1 = require("./prisma");
 const client_1 = require("@prisma/client");
 const mappers_1 = require("./mappers");
 const callSockets_1 = require("./callSockets");
+const socketService_1 = __importDefault(require("./socketService"));
 function configureSocket(server) {
     const io = new socket_io_1.Server(server, {
         cors: {
             origin: "*",
         },
     });
+    // Set the io instance in our socket service
+    socketService_1.default.setIo(io);
     const callService = new callSockets_1.CallService(io);
     io.on("connection", (socket) => __awaiter(this, void 0, void 0, function* () {
         console.log("A user connected:", socket.id);
-        callService.setupSignaling(socket);
         // Update user status to online
         const userId = socket.handshake.query.userId;
         if (userId) {
@@ -134,10 +139,6 @@ function configureSocket(server) {
                 console.log(`User ${socket.id} attempted to join channel ${channelId} but is not a participant`);
             }
         }));
-        socket.on("leaveChannelRoom", (channelId) => {
-            socket.leave(`conversation_${channelId}`);
-            console.log(`User ${socket.id} left channel ${channelId}`);
-        });
         socket.on("sendChannelMessage", (data) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const { userId, channelId, text } = data;

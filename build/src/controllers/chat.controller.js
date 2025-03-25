@@ -32,6 +32,7 @@ const client_1 = require("@prisma/client");
 const prisma_1 = require("../helpers/prisma");
 const mappers_1 = require("../helpers/mappers");
 const storage_1 = require("../helpers/storage");
+const socketService_1 = __importDefault(require("../helpers/socketService"));
 let ChatController = class ChatController extends base_controller_1.default {
     createConversation(dto, file) {
         const _super = Object.create(null, {
@@ -441,16 +442,16 @@ let ChatController = class ChatController extends base_controller_1.default {
             });
         });
     }
-    leaveChannel(channelId_1, _a) {
+    leaveChannel(conversationId_1, _a) {
         const _super = Object.create(null, {
             error: { get: () => super.error },
             ok: { get: () => super.ok }
         });
-        return __awaiter(this, arguments, void 0, function* (channelId, { userId }) {
+        return __awaiter(this, arguments, void 0, function* (conversationId, { userId }) {
             const participant = yield prisma_1.prisma.participant.findFirst({
                 where: {
                     userId,
-                    conversationId: channelId,
+                    conversationId,
                 },
                 include: { user: true },
             });
@@ -459,52 +460,30 @@ let ChatController = class ChatController extends base_controller_1.default {
             }
             // Check if user is the owner
             if (participant.role === "OWNER") {
-                // Count other admins
-                const adminCount = yield prisma_1.prisma.participant.count({
-                    where: {
-                        conversationId: channelId,
-                        role: "ADMIN",
-                    },
-                });
-                if (adminCount === 0) {
-                    return _super.error.call(this, "Cannot leave channel: you are the owner and there are no admins to take over");
-                }
-                // Promote first admin to owner
-                const firstAdmin = yield prisma_1.prisma.participant.findFirst({
-                    where: {
-                        conversationId: channelId,
-                        role: "ADMIN",
-                    },
-                    include: { user: true },
-                });
-                if (firstAdmin) {
-                    yield prisma_1.prisma.participant.update({
-                        where: { id: firstAdmin.id },
-                        data: { role: "OWNER" },
-                    });
-                    // Add system message about ownership transfer
-                    yield prisma_1.prisma.message.create({
-                        data: {
-                            text: `${participant.user.name} transferred ownership to ${firstAdmin.user.name}`,
-                            type: client_1.MessageType.INFO,
-                            userId,
-                            conversationId: channelId,
-                        },
-                    });
-                }
+                return _super.error.call(this, "Cannot leave channel: you are the owner and there are no admins to take over");
             }
             // Add system message that user left
-            yield prisma_1.prisma.message.create({
+            const message = yield prisma_1.prisma.message.create({
                 data: {
                     text: `${participant.user.name} left the channel`,
                     type: client_1.MessageType.INFO,
                     userId,
-                    conversationId: channelId,
+                    conversationId: conversationId,
                 },
+                include: { user: true },
+            });
+            // Emit message via socket service
+            socketService_1.default.emitToConversation(conversationId, "receiveMessage", {
+                message: (0, mappers_1.messageMapper)(message),
             });
             // Remove participant
             yield prisma_1.prisma.participant.delete({
                 where: { id: participant.id },
+            });
+            // Update last message date
+            yield prisma_1.prisma.conversation.update({
+                where: { id: conversationId },
+                data: { lastMessageDate: new Date() },
             });
             return _super.ok.call(this, {
                 success: true,
@@ -626,8 +605,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "joinChannel", null);
 __decorate([
-    (0, routing_controllers_1.Delete)("/leave/channel/:channelId"),
-    __param(0, (0, routing_controllers_1.Param)("channelId")),
+    (0, routing_controllers_1.Delete)("/leave/conversation/:conversationId"),
+    __param(0, (0, routing_controllers_1.Param)("conversationId")),
     __param(1, (0, routing_controllers_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Object]),

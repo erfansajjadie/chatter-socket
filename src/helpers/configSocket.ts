@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import { MessageType } from "@prisma/client";
 import { messageMapper, userMapper } from "./mappers";
 import { CallService } from "./callSockets";
+import socketService from "./socketService";
 
 function configureSocket(server: http.Server) {
   const io = new Server(server, {
@@ -12,13 +13,13 @@ function configureSocket(server: http.Server) {
     },
   });
 
+  // Set the io instance in our socket service
+  socketService.setIo(io);
+
   const callService = new CallService(io);
 
   io.on("connection", async (socket: Socket) => {
     console.log("A user connected:", socket.id);
-
-    callService.setupSignaling(socket);
-
     // Update user status to online
     const userId = socket.handshake.query.userId;
     if (userId) {
@@ -149,11 +150,6 @@ function configureSocket(server: http.Server) {
           `User ${socket.id} attempted to join channel ${channelId} but is not a participant`,
         );
       }
-    });
-
-    socket.on("leaveChannelRoom", (channelId) => {
-      socket.leave(`conversation_${channelId}`);
-      console.log(`User ${socket.id} left channel ${channelId}`);
     });
 
     socket.on("sendChannelMessage", async (data) => {

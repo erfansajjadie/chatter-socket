@@ -20,6 +20,7 @@ import {
   userMapper,
 } from "../helpers/mappers";
 import { saveFile } from "../helpers/storage";
+import socketService from "../helpers/socketService";
 
 @JsonController()
 export class ChatController extends BaseController {
@@ -492,15 +493,15 @@ export class ChatController extends BaseController {
     });
   }
 
-  @Delete("/leave/channel/:channelId")
+  @Delete("/leave/conversation/:conversationId")
   async leaveChannel(
-    @Param("channelId") channelId: number,
+    @Param("conversationId") conversationId: number,
     @Body() { userId }: { userId: number },
   ) {
     const participant = await prisma.participant.findFirst({
       where: {
         userId,
-        conversationId: channelId,
+        conversationId,
       },
       include: { user: true },
     });
@@ -511,60 +512,36 @@ export class ChatController extends BaseController {
 
     // Check if user is the owner
     if (participant.role === "OWNER") {
-      // Count other admins
-      const adminCount = await prisma.participant.count({
-        where: {
-          conversationId: channelId,
-          role: "ADMIN",
-        },
-      });
-
-      if (adminCount === 0) {
-        return super.error(
-          "Cannot leave channel: you are the owner and there are no admins to take over",
-        );
-      }
-
-      // Promote first admin to owner
-      const firstAdmin = await prisma.participant.findFirst({
-        where: {
-          conversationId: channelId,
-          role: "ADMIN",
-        },
-        include: { user: true },
-      });
-
-      if (firstAdmin) {
-        await prisma.participant.update({
-          where: { id: firstAdmin.id },
-          data: { role: "OWNER" },
-        });
-
-        // Add system message about ownership transfer
-        await prisma.message.create({
-          data: {
-            text: `${participant.user.name} transferred ownership to ${firstAdmin.user.name}`,
-            type: MessageType.INFO,
-            userId,
-            conversationId: channelId,
-          },
-        });
-      }
+      return super.error(
+        "Cannot leave channel: you are the owner and there are no admins to take over",
+      );
     }
 
     // Add system message that user left
-    await prisma.message.create({
+    const message = await prisma.message.create({
       data: {
         text: `${participant.user.name} left the channel`,
         type: MessageType.INFO,
         userId,
-        conversationId: channelId,
+        conversationId: conversationId,
       },
+      include: { user: true },
+    });
+
+    // Emit message via socket service
+    socketService.emitToConversation(conversationId, "receiveMessage", {
+      message: messageMapper(message),
     });
 
     // Remove participant
     await prisma.participant.delete({
       where: { id: participant.id },
+    });
+
+    // Update last message date
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { lastMessageDate: new Date() },
     });
 
     return super.ok({
