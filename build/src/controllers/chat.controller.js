@@ -578,25 +578,6 @@ let ChatController = class ChatController extends base_controller_1.default {
                 participant.conversation.type !== client_1.ConversationType.GROUP) {
                 return _super.error.call(this, "Only channels and groups can be deleted");
             }
-            // Create a system message about the conversation being deleted
-            const message = yield prisma_1.prisma.message.create({
-                data: {
-                    text: `This ${participant.conversation.type.toLowerCase()} is being deleted`,
-                    type: client_1.MessageType.INFO,
-                    userId,
-                    conversationId,
-                },
-                include: { user: true },
-            });
-            // Emit message via socket service
-            socketService_1.default.emitToConversation(conversationId, "receiveMessage", {
-                message: (0, mappers_1.messageMapper)(message),
-                isDeleting: true,
-            });
-            // Delete the conversation (this will cascade delete messages and participants)
-            yield prisma_1.prisma.conversation.delete({
-                where: { id: conversationId },
-            });
             return _super.ok.call(this, {
                 success: true,
                 deletedConversationId: conversationId,
