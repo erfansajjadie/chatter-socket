@@ -193,6 +193,39 @@ let ChatController = class ChatController extends base_controller_1.default {
             };
         });
     }
+    getPrivateConversation(senderId, receiverId) {
+        const _super = Object.create(null, {
+            error: { get: () => super.error },
+            ok: { get: () => super.ok }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            // Validate input
+            if (!senderId || !receiverId) {
+                return _super.error.call(this, "Both senderId and receiverId are required");
+            }
+            // Find private conversation between these two users
+            const conversation = yield prisma_1.prisma.conversation.findFirst({
+                where: {
+                    type: client_1.ConversationType.PRIVATE,
+                    participants: {
+                        some: {
+                            userId: senderId,
+                        },
+                    },
+                    AND: {
+                        participants: {
+                            some: {
+                                userId: receiverId,
+                            },
+                        },
+                    },
+                },
+            });
+            return _super.ok.call(this, {
+                conversationId: conversation ? conversation.id : null,
+            });
+        });
+    }
     getMessages(id, userId) {
         return __awaiter(this, void 0, void 0, function* () {
             // Fetch both messages and conversation in parallel
@@ -698,6 +731,14 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getConversation", null);
+__decorate([
+    (0, routing_controllers_1.Get)("/get-conversation-id"),
+    __param(0, (0, routing_controllers_1.QueryParam)("senderId")),
+    __param(1, (0, routing_controllers_1.QueryParam)("receiverId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "getPrivateConversation", null);
 __decorate([
     (0, routing_controllers_1.Get)("/conversation/:id/messages"),
     __param(0, (0, routing_controllers_1.Param)("id")),

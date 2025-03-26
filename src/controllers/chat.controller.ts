@@ -196,6 +196,40 @@ export class ChatController extends BaseController {
     };
   }
 
+  @Get("/get-conversation-id")
+  async getPrivateConversation(
+    @QueryParam("senderId") senderId: number,
+    @QueryParam("receiverId") receiverId: number
+  ) {
+    // Validate input
+    if (!senderId || !receiverId) {
+      return super.error("Both senderId and receiverId are required");
+    }
+
+    // Find private conversation between these two users
+    const conversation = await prisma.conversation.findFirst({
+      where: {
+        type: ConversationType.PRIVATE,
+        participants: {
+          some: {
+            userId: senderId,
+          },
+        },
+        AND: {
+          participants: {
+            some: {
+              userId: receiverId,
+            },
+          },
+        },
+      },
+    });
+
+    return super.ok({
+      conversationId: conversation ? conversation.id : null,
+    });
+  }
+
   @Get("/conversation/:id/messages")
   async getMessages(
     @Param("id") id: number,
