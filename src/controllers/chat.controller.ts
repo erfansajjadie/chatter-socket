@@ -666,6 +666,11 @@ export class ChatController extends BaseController {
       return super.error("Only channels and groups can be deleted");
     }
 
+    // Delete the conversation (this will cascade delete messages and participants)
+    await prisma.conversation.delete({
+      where: { id: conversationId },
+    });
+
     return super.ok({
       success: true,
       deletedConversationId: conversationId,

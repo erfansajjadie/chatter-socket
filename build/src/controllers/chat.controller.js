@@ -578,6 +578,10 @@ let ChatController = class ChatController extends base_controller_1.default {
                 participant.conversation.type !== client_1.ConversationType.GROUP) {
                 return _super.error.call(this, "Only channels and groups can be deleted");
             }
+            // Delete the conversation (this will cascade delete messages and participants)
+            yield prisma_1.prisma.conversation.delete({
+                where: { id: conversationId },
+            });
             return _super.ok.call(this, {
                 success: true,
                 deletedConversationId: conversationId,
