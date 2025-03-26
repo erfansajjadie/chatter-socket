@@ -72,6 +72,8 @@ export function conversationMapper(data: ConversationFull, userId: number) {
     receiverId,
     ownerId: ownerId,
     adminIds: adminIds,
+    isPublic: data.isPublic,
+    description: data.description,
     lastOnlineTime: getTimeFormat(data.updatedAt),
     unreadCount: data._count.messages,
     participantsCount: data.participants.length,

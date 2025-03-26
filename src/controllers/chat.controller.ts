@@ -11,6 +11,7 @@ import {
   Delete,
 } from "routing-controllers";
 import { ConversationDto } from "../entities/conversation.dto";
+import { UpdateConversationDto } from "../entities/update-conversation.dto";
 import { ConversationType, MessageType, ParticipantRole } from "@prisma/client";
 import { prisma } from "../helpers/prisma";
 import {
@@ -636,6 +637,110 @@ export class ChatController extends BaseController {
         ...updatedParticipant,
         user: userMapper(updatedParticipant.user),
       },
+    });
+  }
+
+  @Put("/conversation/:conversationId/update")
+  async updateConversation(
+    @Param("conversationId") conversationId: number,
+    @Body() dto: UpdateConversationDto,
+    @UploadedFile("file") file: any,
+  ) {
+    const { userId, name, description, isPublic } = dto;
+
+    // Check if conversation exists and user is a participant
+    const participant = await prisma.participant.findFirst({
+      where: {
+        userId,
+        conversationId,
+      },
+      include: { conversation: true },
+    });
+
+    if (!participant) {
+      return super.error("You are not a participant of this conversation");
+    }
+
+    // Check if the conversation is a GROUP or CHANNEL
+    if (
+      participant.conversation.type !== ConversationType.GROUP &&
+      participant.conversation.type !== ConversationType.CHANNEL
+    ) {
+      return super.error("Only groups and channels can be updated");
+    }
+
+    // Check if user has permission (owner or admin)
+    if (!["OWNER", "ADMIN"].includes(participant.role as string)) {
+      return super.error(
+        "You don't have permission to update this conversation",
+      );
+    }
+
+    // Process image update if provided
+    let image = participant.conversation.image;
+    if (file) {
+      image = saveFile(file, "conversation_images");
+    }
+
+    // Track what changed for the system message
+    const changes: string[] = [];
+    if (name && name !== participant.conversation.name) changes.push("name");
+    if (description !== participant.conversation.description)
+      changes.push("description");
+    if (isPublic !== participant.conversation.isPublic)
+      changes.push("privacy settings");
+    if (file) changes.push("image");
+
+    // Update conversation
+    const updatedConversation = await prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        name: name !== undefined ? name : undefined,
+        description: description !== undefined ? description : undefined,
+        isPublic: isPublic !== undefined ? isPublic : undefined,
+        image: file ? image : undefined,
+        lastMessageDate: new Date(),
+      },
+      include: {
+        _count: {
+          select: {
+            messages: { where: { userId: { not: userId }, isSeen: false } },
+            participants: true,
+          },
+        },
+        participants: {
+          take: 5,
+          include: { user: true },
+        },
+        messages: {
+          orderBy: { id: "desc" },
+          take: 1,
+          include: { user: true },
+        },
+      },
+    });
+
+    // Create system message about changes if there were any
+    if (changes.length > 0) {
+      const changeText = changes.join(", ");
+      const message = await prisma.message.create({
+        data: {
+          text: `Conversation ${changeText} updated`,
+          type: MessageType.INFO,
+          userId,
+          conversationId,
+        },
+        include: { user: true },
+      });
+
+      // Emit message via socket service
+      socketService.emitToConversation(conversationId, "receiveMessage", {
+        message: messageMapper(message),
+      });
+    }
+
+    return super.ok({
+      conversation: conversationMapper(updatedConversation, userId),
     });
   }
 
