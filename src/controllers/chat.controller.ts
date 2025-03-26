@@ -422,13 +422,19 @@ export class ChatController extends BaseController {
     });
 
     // Add system message that user was added
-    await prisma.message.create({
+    const message = await prisma.message.create({
       data: {
         text: `${targetUser.name} was added to the conversation`,
         type: MessageType.INFO,
         userId,
         conversationId,
       },
+      include: { user: true },
+    });
+
+    // Emit message via socket service
+    socketService.emitToConversation(conversationId, "receiveMessage", {
+      message: messageMapper(message),
     });
 
     return super.ok({
@@ -442,9 +448,6 @@ export class ChatController extends BaseController {
 
   @Post("/contacts")
   async getContacts() {
-    /* {
-      where: { mobile: { in: dto.mobiles } },
-    } */
     const users = await prisma.user.findMany();
     return { data: mapper(users, userMapper) };
   }
@@ -633,6 +636,61 @@ export class ChatController extends BaseController {
         ...updatedParticipant,
         user: userMapper(updatedParticipant.user),
       },
+    });
+  }
+
+  @Delete("/delete/conversation/:conversationId")
+  async deleteConversation(
+    @Param("conversationId") conversationId: number,
+    @Body() { userId }: { userId: number },
+  ) {
+    // Check if the requesting user is the owner of the conversation
+    const participant = await prisma.participant.findFirst({
+      where: {
+        userId,
+        conversationId,
+        role: "OWNER",
+      },
+      include: { conversation: true },
+    });
+
+    if (!participant) {
+      return super.error("Only the owner can delete this conversation");
+    }
+
+    // Verify this is a channel or group
+    if (
+      participant.conversation.type !== ConversationType.CHANNEL &&
+      participant.conversation.type !== ConversationType.GROUP
+    ) {
+      return super.error("Only channels and groups can be deleted");
+    }
+
+    // Create a system message about the conversation being deleted
+    const message = await prisma.message.create({
+      data: {
+        text: `This ${participant.conversation.type.toLowerCase()} is being deleted`,
+        type: MessageType.INFO,
+        userId,
+        conversationId,
+      },
+      include: { user: true },
+    });
+
+    // Emit message via socket service
+    socketService.emitToConversation(conversationId, "receiveMessage", {
+      message: messageMapper(message),
+      isDeleting: true,
+    });
+
+    // Delete the conversation (this will cascade delete messages and participants)
+    await prisma.conversation.delete({
+      where: { id: conversationId },
+    });
+
+    return super.ok({
+      success: true,
+      deletedConversationId: conversationId,
     });
   }
 }

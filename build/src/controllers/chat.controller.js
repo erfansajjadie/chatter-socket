@@ -376,13 +376,18 @@ let ChatController = class ChatController extends base_controller_1.default {
                 include: { user: true },
             });
             // Add system message that user was added
-            yield prisma_1.prisma.message.create({
+            const message = yield prisma_1.prisma.message.create({
                 data: {
                     text: `${targetUser.name} was added to the conversation`,
                     type: client_1.MessageType.INFO,
                     userId,
                     conversationId,
                 },
+                include: { user: true },
+            });
+            // Emit message via socket service
+            socketService_1.default.emitToConversation(conversationId, "receiveMessage", {
+                message: (0, mappers_1.messageMapper)(message),
             });
             return _super.ok.call(this, {
                 success: true,
@@ -392,9 +397,6 @@ let ChatController = class ChatController extends base_controller_1.default {
     }
     getContacts() {
         return __awaiter(this, void 0, void 0, function* () {
-            /* {
-              where: { mobile: { in: dto.mobiles } },
-            } */
             const users = yield prisma_1.prisma.user.findMany();
             return { data: (0, mappers_1.mapper)(users, mappers_1.userMapper) };
         });
@@ -553,6 +555,54 @@ let ChatController = class ChatController extends base_controller_1.default {
             });
         });
     }
+    deleteConversation(conversationId_1, _a) {
+        const _super = Object.create(null, {
+            error: { get: () => super.error },
+            ok: { get: () => super.ok }
+        });
+        return __awaiter(this, arguments, void 0, function* (conversationId, { userId }) {
+            // Check if the requesting user is the owner of the conversation
+            const participant = yield prisma_1.prisma.participant.findFirst({
+                where: {
+                    userId,
+                    conversationId,
+                    role: "OWNER",
+                },
+                include: { conversation: true },
+            });
+            if (!participant) {
+                return _super.error.call(this, "Only the owner can delete this conversation");
+            }
+            // Verify this is a channel or group
+            if (participant.conversation.type !== client_1.ConversationType.CHANNEL &&
+                participant.conversation.type !== client_1.ConversationType.GROUP) {
+                return _super.error.call(this, "Only channels and groups can be deleted");
+            }
+            // Create a system message about the conversation being deleted
+            const message = yield prisma_1.prisma.message.create({
+                data: {
+                    text: `This ${participant.conversation.type.toLowerCase()} is being deleted`,
+                    type: client_1.MessageType.INFO,
+                    userId,
+                    conversationId,
+                },
+                include: { user: true },
+            });
+            // Emit message via socket service
+            socketService_1.default.emitToConversation(conversationId, "receiveMessage", {
+                message: (0, mappers_1.messageMapper)(message),
+                isDeleting: true,
+            });
+            // Delete the conversation (this will cascade delete messages and participants)
+            yield prisma_1.prisma.conversation.delete({
+                where: { id: conversationId },
+            });
+            return _super.ok.call(this, {
+                success: true,
+                deletedConversationId: conversationId,
+            });
+        });
+    }
 };
 exports.ChatController = ChatController;
 __decorate([
@@ -631,6 +681,14 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "updateParticipantRole", null);
+__decorate([
+    (0, routing_controllers_1.Delete)("/delete/conversation/:conversationId"),
+    __param(0, (0, routing_controllers_1.Param)("conversationId")),
+    __param(1, (0, routing_controllers_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "deleteConversation", null);
 exports.ChatController = ChatController = __decorate([
     (0, routing_controllers_1.JsonController)()
 ], ChatController);
