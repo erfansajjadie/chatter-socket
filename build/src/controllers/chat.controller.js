@@ -50,6 +50,7 @@ let ChatController = class ChatController extends base_controller_1.default {
             if (type == client_1.ConversationType.PRIVATE) {
                 const previousConversation = yield prisma_1.prisma.conversation.findFirst({
                     where: {
+                        type: "PRIVATE",
                         participants: {
                             some: {
                                 userId: dto.userId,

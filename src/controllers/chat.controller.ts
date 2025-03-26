@@ -43,6 +43,7 @@ export class ChatController extends BaseController {
     if (type == ConversationType.PRIVATE) {
       const previousConversation = await prisma.conversation.findFirst({
         where: {
+          type: "PRIVATE",
           participants: {
             some: {
               userId: dto.userId,
@@ -199,7 +200,7 @@ export class ChatController extends BaseController {
   @Get("/get-conversation-id")
   async getPrivateConversation(
     @QueryParam("senderId") senderId: number,
-    @QueryParam("receiverId") receiverId: number
+    @QueryParam("receiverId") receiverId: number,
   ) {
     // Validate input
     if (!senderId || !receiverId) {
