@@ -65,9 +65,4 @@ export class AuthController extends BaseController {
   async getProfile(@CurrentUser({ required: true }) user: User) {
     return { user: userMapper(user) };
   }
-
-  @Get("/send-push")
-  async sendPush(@Param("pushToken") pushToken: string) {
-    
-  }
 }

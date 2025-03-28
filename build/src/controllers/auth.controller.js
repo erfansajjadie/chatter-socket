@@ -112,10 +112,6 @@ let AuthController = class AuthController extends base_controller_1.default {
             return { user: (0, mappers_1.userMapper)(user) };
         });
     }
-    sendPush(pushToken) {
-        return __awaiter(this, void 0, void 0, function* () {
-        });
-    }
 };
 exports.AuthController = AuthController;
 __decorate([
@@ -139,13 +135,6 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "getProfile", null);
-__decorate([
-    (0, routing_controllers_1.Get)("/send-push"),
-    __param(0, (0, routing_controllers_1.Param)("pushToken")),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "sendPush", null);
 exports.AuthController = AuthController = __decorate([
     (0, routing_controllers_1.JsonController)("/auth")
 ], AuthController);
