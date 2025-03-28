@@ -68,32 +68,6 @@ export class AuthController extends BaseController {
 
   @Get("/send-push")
   async sendPush(@Param("pushToken") pushToken: string) {
-    try {
-      const message = {
-        notification: {
-          title: "Test Notification",
-          body: "This is a test notification from Chatter!",
-        },
-        data: {
-          testData: "Test data goes here",
-        },
-        token: pushToken,
-      };
-
-      // Send the message using Firebase Admin
-      const response = await admin.messaging().send(message);
-
-      return {
-        message: "Push notification sent",
-        pushToken,
-        messageId: response,
-      };
-    } catch (error: any) {
-      return {
-        message: "Failed to send push notification",
-        error: error.message,
-        pushToken,
-      };
-    }
+    
   }
 }
