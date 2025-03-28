@@ -73,6 +73,7 @@ export function conversationMapper(data: ConversationFull, userId: number) {
     ownerId: ownerId,
     adminIds: adminIds,
     isPublic: data.isPublic,
+    tags: data.tags ? data.tags.split(",") : [],
     description: data.description,
     lastOnlineTime: getTimeFormat(data.updatedAt),
     unreadCount: data._count.messages,

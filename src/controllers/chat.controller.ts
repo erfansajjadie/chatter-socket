@@ -107,6 +107,7 @@ export class ChatController extends BaseController {
         type,
         image,
         name,
+        tags: dto.tags || null,
         description: description || null,
         isPublic: type === ConversationType.CHANNEL ? isPublic == "true" : null,
         lastMessageDate: new Date(),
@@ -815,5 +816,45 @@ export class ChatController extends BaseController {
       success: true,
       deletedConversationId: conversationId,
     });
+  }
+
+  @Get("/public-channels")
+  async getPublicChannels(@QueryParam("userId") userId: number) {
+    if (!userId) {
+      return super.error("User ID is required");
+    }
+
+    const channels = await prisma.conversation.findMany({
+      where: {
+        type: ConversationType.CHANNEL,
+        isPublic: true,
+        participants: {
+          none: {
+            userId: userId,
+          },
+        },
+      },
+      include: {
+        _count: {
+          select: {
+            messages: { where: { isSeen: false } },
+            participants: true,
+          },
+        },
+        participants: {
+          take: 5,
+          include: { user: true },
+        },
+        messages: {
+          orderBy: { id: "desc" },
+          take: 1,
+          include: { user: true },
+        },
+      },
+    });
+
+    return {
+      data: channels.map((c) => conversationMapper(c, userId)),
+    };
   }
 }

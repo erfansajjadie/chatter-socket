@@ -45,7 +45,7 @@ function conversationMapper(data, userId) {
         receiverId = receiver === null || receiver === void 0 ? void 0 : receiver.userId;
     }
     return Object.assign({ id: data.id, name, image: (0, functions_1.getFileUrl)(image), type: data.type, isOnline,
-        receiverId, ownerId: ownerId, adminIds: adminIds, isPublic: data.isPublic, description: data.description, lastOnlineTime: (0, functions_1.getTimeFormat)(data.updatedAt), unreadCount: data._count.messages, participantsCount: data.participants.length }, (data.messages.length > 0
+        receiverId, ownerId: ownerId, adminIds: adminIds, isPublic: data.isPublic, tags: data.tags ? data.tags.split(",") : [], description: data.description, lastOnlineTime: (0, functions_1.getTimeFormat)(data.updatedAt), unreadCount: data._count.messages, participantsCount: data.participants.length }, (data.messages.length > 0
         ? { lastMessage: messageMapper(data.messages[0]) }
         : null));
 }

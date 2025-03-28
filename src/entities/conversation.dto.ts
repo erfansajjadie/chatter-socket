@@ -31,4 +31,7 @@ export class ConversationDto {
 
   @IsOptional()
   description: string;
+
+  @IsOptional()
+  tags: string;
 }

@@ -35,6 +35,7 @@ model Conversation {
   description     String?          // Description for channels
   isPublic        Boolean?         // Whether a channel is public or private
   lastMessageDate DateTime?
+  tags            String?
   type            ConversationType
   messages        Message[]
   participants    Participant[]

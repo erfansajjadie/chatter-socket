@@ -110,6 +110,7 @@ let ChatController = class ChatController extends base_controller_1.default {
                     type,
                     image,
                     name,
+                    tags: dto.tags || null,
                     description: description || null,
                     isPublic: type === client_1.ConversationType.CHANNEL ? isPublic == "true" : null,
                     lastMessageDate: new Date(),
@@ -715,6 +716,47 @@ let ChatController = class ChatController extends base_controller_1.default {
             });
         });
     }
+    getPublicChannels(userId) {
+        const _super = Object.create(null, {
+            error: { get: () => super.error }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!userId) {
+                return _super.error.call(this, "User ID is required");
+            }
+            const channels = yield prisma_1.prisma.conversation.findMany({
+                where: {
+                    type: client_1.ConversationType.CHANNEL,
+                    isPublic: true,
+                    participants: {
+                        none: {
+                            userId: userId,
+                        },
+                    },
+                },
+                include: {
+                    _count: {
+                        select: {
+                            messages: { where: { isSeen: false } },
+                            participants: true,
+                        },
+                    },
+                    participants: {
+                        take: 5,
+                        include: { user: true },
+                    },
+                    messages: {
+                        orderBy: { id: "desc" },
+                        take: 1,
+                        include: { user: true },
+                    },
+                },
+            });
+            return {
+                data: channels.map((c) => (0, mappers_1.conversationMapper)(c, userId)),
+            };
+        });
+    }
 };
 exports.ChatController = ChatController;
 __decorate([
@@ -818,6 +860,13 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "deleteConversation", null);
+__decorate([
+    (0, routing_controllers_1.Get)("/public-channels"),
+    __param(0, (0, routing_controllers_1.QueryParam)("userId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "getPublicChannels", null);
 exports.ChatController = ChatController = __decorate([
     (0, routing_controllers_1.JsonController)()
 ], ChatController);
