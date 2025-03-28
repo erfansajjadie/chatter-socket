@@ -5,6 +5,13 @@ export function getFileUrl(url?: string | null) {
   return `${process.env.CDN_HOST}/${url}`;
 }
 
+export function getAvatarUrl(url?: string | null) {
+  if (!url) {
+    return null;
+  }
+  return `https://synapsetech.ir/storage/${url}`;
+}
+
 export function getTimeFormat(inputDate: Date) {
   const today = new Date();
 

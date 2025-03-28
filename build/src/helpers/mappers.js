@@ -14,7 +14,7 @@ function userMapper(user) {
         id: user.id,
         name: user.name,
         mobile: user.mobile,
-        avatar: (0, functions_1.getFileUrl)(user.avatar),
+        avatar: (0, functions_1.getAvatarUrl)(user.avatar),
     };
 }
 function conversationMapper(data, userId) {
@@ -28,7 +28,7 @@ function conversationMapper(data, userId) {
     if (data.type == client_1.ConversationType.GROUP ||
         data.type == client_1.ConversationType.CHANNEL) {
         name = data.name;
-        image = data.image;
+        image = (0, functions_1.getFileUrl)(data.image);
         // Find the owner/admin of the group or channel
         const admin = data.participants.find((p) => p.role === "OWNER");
         ownerId = admin === null || admin === void 0 ? void 0 : admin.userId;
@@ -40,11 +40,12 @@ function conversationMapper(data, userId) {
     else {
         const receiver = data.participants.find((p) => p.userId != userId);
         name = receiver === null || receiver === void 0 ? void 0 : receiver.user.name;
-        image = receiver === null || receiver === void 0 ? void 0 : receiver.user.avatar;
+        image = (0, functions_1.getAvatarUrl)(receiver === null || receiver === void 0 ? void 0 : receiver.user.avatar);
         isOnline = (_a = receiver === null || receiver === void 0 ? void 0 : receiver.user.isOnline) !== null && _a !== void 0 ? _a : false;
         receiverId = receiver === null || receiver === void 0 ? void 0 : receiver.userId;
     }
-    return Object.assign({ id: data.id, name, image: (0, functions_1.getFileUrl)(image), type: data.type, isOnline,
+    return Object.assign({ id: data.id, name,
+        image, type: data.type, isOnline,
         receiverId, ownerId: ownerId, adminIds: adminIds, isPublic: data.isPublic, tags: data.tags ? data.tags.split(",") : [], description: data.description, lastOnlineTime: (0, functions_1.getTimeFormat)(data.updatedAt), unreadCount: data._count.messages, participantsCount: data.participants.length }, (data.messages.length > 0
         ? { lastMessage: messageMapper(data.messages[0]) }
         : null));

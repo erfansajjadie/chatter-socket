@@ -1,12 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFileUrl = getFileUrl;
+exports.getAvatarUrl = getAvatarUrl;
 exports.getTimeFormat = getTimeFormat;
 function getFileUrl(url) {
     if (!url) {
         return null;
     }
     return `${process.env.CDN_HOST}/${url}`;
+}
+function getAvatarUrl(url) {
+    if (!url) {
+        return null;
+    }
+    return `https://synapsetech.ir/storage/${url}`;
 }
 function getTimeFormat(inputDate) {
     const today = new Date();

@@ -1,5 +1,5 @@
 import { ConversationType, Prisma, User } from "@prisma/client";
-import { getFileUrl, getTimeFormat } from "./functions";
+import { getAvatarUrl, getFileUrl, getTimeFormat } from "./functions";
 
 export function mapper<T, R>(list: T[], mappingFunction: (item: T) => R): R[] {
   return list.map(mappingFunction);
@@ -26,7 +26,7 @@ export function userMapper(user: User) {
     id: user.id,
     name: user.name,
     mobile: user.mobile,
-    avatar: getFileUrl(user.avatar),
+    avatar: getAvatarUrl(user.avatar),
   };
 }
 
@@ -43,7 +43,7 @@ export function conversationMapper(data: ConversationFull, userId: number) {
     data.type == ConversationType.CHANNEL
   ) {
     name = data.name;
-    image = data.image;
+    image = getFileUrl(data.image);
     // Find the owner/admin of the group or channel
     const admin = data.participants.find((p) => p.role === "OWNER");
     ownerId = admin?.userId;
@@ -58,7 +58,7 @@ export function conversationMapper(data: ConversationFull, userId: number) {
   } else {
     const receiver = data.participants.find((p) => p.userId != userId);
     name = receiver?.user.name;
-    image = receiver?.user.avatar;
+    image = getAvatarUrl(receiver?.user.avatar);
     isOnline = receiver?.user.isOnline ?? false;
     receiverId = receiver?.userId;
   }
@@ -66,7 +66,7 @@ export function conversationMapper(data: ConversationFull, userId: number) {
   return {
     id: data.id,
     name,
-    image: getFileUrl(image),
+    image,
     type: data.type,
     isOnline,
     receiverId,
