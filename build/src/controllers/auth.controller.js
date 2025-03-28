@@ -56,7 +56,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const routing_controllers_1 = require("routing-controllers");
@@ -67,16 +66,6 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const login_dto_1 = require("../entities/login.dto");
 const mappers_1 = require("../helpers/mappers");
 const admin = __importStar(require("firebase-admin"));
-// Initialize Firebase Admin (do this once in your application startup)
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: (_a = process.env.FIREBASE_PRIVATE_KEY) === null || _a === void 0 ? void 0 : _a.replace(/\\n/g, "\n"),
-        }),
-    });
-}
 const secretKey = process.env.SECRET_KEY;
 let AuthController = class AuthController extends base_controller_1.default {
     register(dto) {
@@ -112,6 +101,36 @@ let AuthController = class AuthController extends base_controller_1.default {
             return { user: (0, mappers_1.userMapper)(user) };
         });
     }
+    sendPush(pushToken) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const message = {
+                    notification: {
+                        title: "Test Notification",
+                        body: "This is a test notification from Chatter!",
+                    },
+                    data: {
+                        testData: "Test data goes here",
+                    },
+                    token: pushToken,
+                };
+                // Send the message using Firebase Admin
+                const response = yield admin.messaging().send(message);
+                return {
+                    message: "Push notification sent",
+                    pushToken,
+                    messageId: response,
+                };
+            }
+            catch (error) {
+                return {
+                    message: "Failed to send push notification",
+                    error: error.message,
+                    pushToken,
+                };
+            }
+        });
+    }
 };
 exports.AuthController = AuthController;
 __decorate([
@@ -135,6 +154,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "getProfile", null);
+__decorate([
+    (0, routing_controllers_1.Get)("/send-push"),
+    __param(0, (0, routing_controllers_1.Param)("pushToken")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "sendPush", null);
 exports.AuthController = AuthController = __decorate([
     (0, routing_controllers_1.JsonController)("/auth")
 ], AuthController);

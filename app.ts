@@ -33,10 +33,10 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const server = http.createServer(app);
 
-/* admin.initializeApp({
+admin.initializeApp({
   credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
 });
- */
+
 configureSocket(server);
 
 server.listen(port, () => {
