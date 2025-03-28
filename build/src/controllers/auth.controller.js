@@ -156,7 +156,7 @@ __decorate([
 ], AuthController.prototype, "getProfile", null);
 __decorate([
     (0, routing_controllers_1.Get)("/send-push"),
-    __param(0, (0, routing_controllers_1.Param)("pushToken")),
+    __param(0, (0, routing_controllers_1.QueryParam)("pushToken")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)

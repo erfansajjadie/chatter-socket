@@ -5,6 +5,7 @@ import {
   JsonController,
   Param,
   Post,
+  QueryParam,
 } from "routing-controllers";
 import BaseController from "./base.controller";
 import { RegisterDto } from "../entities/register.dto";
@@ -56,7 +57,7 @@ export class AuthController extends BaseController {
   }
 
   @Get("/send-push")
-  async sendPush(@Param("pushToken") pushToken: string) {
+  async sendPush(@QueryParam("pushToken") pushToken: string) {
     try {
       const message = {
         notification: {
