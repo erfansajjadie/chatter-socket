@@ -115,42 +115,32 @@ export class ChatController extends BaseController {
     });
 
     // Create participants for the conversation
-    if (type === ConversationType.CHANNEL) {
-      // For channels, add creator as owner
-      await prisma.participant.create({
-        data: {
+    await prisma.participant.createMany({
+      data: [
+        {
           userId: dto.userId,
           conversationId: conversation.id,
-          role: "OWNER",
+          role: type == ConversationType.PRIVATE ? "MEMBER" : "OWNER",
         },
-      });
+        ...participants.map((p) => {
+          return {
+            userId: p,
+            conversationId: conversation.id,
+            role: ParticipantRole.MEMBER,
+          };
+        }),
+      ],
+    });
 
+    if (type === ConversationType.CHANNEL || type === ConversationType.GROUP) {
       // Create welcome message for channel
       await prisma.message.create({
         data: {
-          text: `Channel "${name}" has been created`,
+          text: `"${name}" has been created`,
           type: MessageType.INFO,
           userId: dto.userId,
           conversationId: conversation.id,
         },
-      });
-    } else {
-      // For regular conversations and groups
-      await prisma.participant.createMany({
-        data: [
-          {
-            userId: dto.userId,
-            conversationId: conversation.id,
-            role: type === ConversationType.GROUP ? "OWNER" : "MEMBER",
-          },
-          ...participants.map((p) => {
-            return {
-              userId: p,
-              conversationId: conversation.id,
-              role: ParticipantRole.MEMBER,
-            };
-          }),
-        ],
       });
     }
 

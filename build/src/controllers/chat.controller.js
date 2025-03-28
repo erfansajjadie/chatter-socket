@@ -117,42 +117,31 @@ let ChatController = class ChatController extends base_controller_1.default {
                 },
             });
             // Create participants for the conversation
-            if (type === client_1.ConversationType.CHANNEL) {
-                // For channels, add creator as owner
-                yield prisma_1.prisma.participant.create({
-                    data: {
+            yield prisma_1.prisma.participant.createMany({
+                data: [
+                    {
                         userId: dto.userId,
                         conversationId: conversation.id,
-                        role: "OWNER",
+                        role: type == client_1.ConversationType.PRIVATE ? "MEMBER" : "OWNER",
                     },
-                });
+                    ...participants.map((p) => {
+                        return {
+                            userId: p,
+                            conversationId: conversation.id,
+                            role: client_1.ParticipantRole.MEMBER,
+                        };
+                    }),
+                ],
+            });
+            if (type === client_1.ConversationType.CHANNEL || type === client_1.ConversationType.GROUP) {
                 // Create welcome message for channel
                 yield prisma_1.prisma.message.create({
                     data: {
-                        text: `Channel "${name}" has been created`,
+                        text: `"${name}" has been created`,
                         type: client_1.MessageType.INFO,
                         userId: dto.userId,
                         conversationId: conversation.id,
                     },
-                });
-            }
-            else {
-                // For regular conversations and groups
-                yield prisma_1.prisma.participant.createMany({
-                    data: [
-                        {
-                            userId: dto.userId,
-                            conversationId: conversation.id,
-                            role: type === client_1.ConversationType.GROUP ? "OWNER" : "MEMBER",
-                        },
-                        ...participants.map((p) => {
-                            return {
-                                userId: p,
-                                conversationId: conversation.id,
-                                role: client_1.ParticipantRole.MEMBER,
-                            };
-                        }),
-                    ],
                 });
             }
             return _super.ok.call(this, {
