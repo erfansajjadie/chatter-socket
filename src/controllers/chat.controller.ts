@@ -556,13 +556,19 @@ export class ChatController extends BaseController {
     });
 
     // Add system message that user joined
-    await prisma.message.create({
+    const message = await prisma.message.create({
       data: {
         text: `User ${participant.user.name} joined the channel`,
         type: MessageType.INFO,
         userId,
         conversationId: channelId,
       },
+      include: { user: true },
+    });
+
+    // Emit message via socket service
+    socketService.emitToConversation(channelId, "receiveMessage", {
+      message: messageMapper(message),
     });
 
     return super.ok({

@@ -498,13 +498,18 @@ let ChatController = class ChatController extends base_controller_1.default {
                 include: { user: true },
             });
             // Add system message that user joined
-            yield prisma_1.prisma.message.create({
+            const message = yield prisma_1.prisma.message.create({
                 data: {
                     text: `User ${participant.user.name} joined the channel`,
                     type: client_1.MessageType.INFO,
                     userId,
                     conversationId: channelId,
                 },
+                include: { user: true },
+            });
+            // Emit message via socket service
+            socketService_1.default.emitToConversation(channelId, "receiveMessage", {
+                message: (0, mappers_1.messageMapper)(message),
             });
             return _super.ok.call(this, {
                 success: true,
