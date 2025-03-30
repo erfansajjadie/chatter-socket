@@ -17,6 +17,7 @@ import { prisma } from "../helpers/prisma";
 import {
   conversationMapper,
   mapper,
+  messageFullMapper,
   messageMapper,
   userMapper,
 } from "../helpers/mappers";
@@ -231,7 +232,14 @@ export class ChatController extends BaseController {
     const [messages, conversation] = await Promise.all([
       prisma.message.findMany({
         where: { conversationId: id },
-        include: { user: true },
+        include: {
+          user: true,
+          replyTo: {
+            include: {
+              user: true,
+            },
+          },
+        },
       }),
       prisma.conversation.findUnique({
         where: { id },
@@ -268,11 +276,34 @@ export class ChatController extends BaseController {
     }
 
     return {
-      data: mapper(messages, messageMapper),
+      data: mapper(messages, messageFullMapper),
       conversation: conversation
         ? conversationMapper(conversation, userId)
         : null,
     };
+  }
+
+  @Get("/message/:id")
+  async getMessage(@Param("id") id: number) {
+    const message = await prisma.message.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        replyTo: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!message) {
+      return super.error("Message not found");
+    }
+
+    return super.ok({
+      message: messageMapper(message),
+    });
   }
 
   @Get("/conversation/:id/get-participants")

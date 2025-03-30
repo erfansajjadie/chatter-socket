@@ -223,7 +223,14 @@ let ChatController = class ChatController extends base_controller_1.default {
             const [messages, conversation] = yield Promise.all([
                 prisma_1.prisma.message.findMany({
                     where: { conversationId: id },
-                    include: { user: true },
+                    include: {
+                        user: true,
+                        replyTo: {
+                            include: {
+                                user: true,
+                            },
+                        },
+                    },
                 }),
                 prisma_1.prisma.conversation.findUnique({
                     where: { id },
@@ -257,11 +264,36 @@ let ChatController = class ChatController extends base_controller_1.default {
                 });
             }
             return {
-                data: (0, mappers_1.mapper)(messages, mappers_1.messageMapper),
+                data: (0, mappers_1.mapper)(messages, mappers_1.messageFullMapper),
                 conversation: conversation
                     ? (0, mappers_1.conversationMapper)(conversation, userId)
                     : null,
             };
+        });
+    }
+    getMessage(id) {
+        const _super = Object.create(null, {
+            error: { get: () => super.error },
+            ok: { get: () => super.ok }
+        });
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = yield prisma_1.prisma.message.findUnique({
+                where: { id },
+                include: {
+                    user: true,
+                    replyTo: {
+                        include: {
+                            user: true,
+                        },
+                    },
+                },
+            });
+            if (!message) {
+                return _super.error.call(this, "Message not found");
+            }
+            return _super.ok.call(this, {
+                message: (0, mappers_1.messageMapper)(message),
+            });
         });
     }
     getConversationParticipants(id) {
@@ -779,6 +811,13 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "getMessages", null);
+__decorate([
+    (0, routing_controllers_1.Get)("/message/:id"),
+    __param(0, (0, routing_controllers_1.Param)("id")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "getMessage", null);
 __decorate([
     (0, routing_controllers_1.Get)("/conversation/:id/get-participants"),
     __param(0, (0, routing_controllers_1.Param)("id")),

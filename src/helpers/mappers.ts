@@ -18,6 +18,10 @@ type ConversationFull = Prisma.ConversationGetPayload<{
 }>;
 
 type MessageFull = Prisma.MessageGetPayload<{
+  include: { user: true; replyTo: { include: { user: true } } };
+}>;
+
+type MessageShort = Prisma.MessageGetPayload<{
   include: { user: true };
 }>;
 
@@ -84,7 +88,7 @@ export function conversationMapper(data: ConversationFull, userId: number) {
   };
 }
 
-export function messageMapper(data: MessageFull) {
+export function messageMapper(data: MessageShort) {
   return {
     id: data.id,
     text: data.text,
@@ -97,6 +101,37 @@ export function messageMapper(data: MessageFull) {
     senderId: data.user.id,
     voiceDuration: data.voiceDuration,
     isSeen: data.isSeen,
+    fileName: data.fileName,
+    fileSize: data.fileSize,
     senderAvatar: getFileUrl(data.user.avatar),
+  };
+}
+
+export function messageFullMapper(data: MessageFull) {
+  return {
+    id: data.id,
+    text: data.text,
+    date: getTimeFormat(data.createdAt),
+    dateTime: data.createdAt.toISOString(), // Add raw ISO date string for the client to parse
+    senderName: data.user.name,
+    conversationId: data.conversationId,
+    type: data.type,
+    file: getFileUrl(data.file),
+    senderId: data.user.id,
+    voiceDuration: data.voiceDuration,
+    isSeen: data.isSeen,
+    senderAvatar: getAvatarUrl(data.user.avatar),
+    // Add reply information
+    replyToId: data.replyToId,
+    replyTo: data.replyTo
+      ? {
+          id: data.replyTo.id,
+          text: data.replyTo.text,
+          senderName: data.replyTo.user?.name,
+          senderId: data.replyTo.user?.id,
+          type: data.replyTo.type,
+          file: getAvatarUrl(data.replyTo.file),
+        }
+      : null,
   };
 }

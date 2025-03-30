@@ -41,21 +41,31 @@ function configureSocket(server) {
         }
         socket.on("sendMessage", (data) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const { userId, conversationId, text, type, file, voiceDuration } = data;
+                const { userId, conversationId, text, type, file, voiceDuration, replyToId, fileName, fileSize, } = data;
                 console.log("Received message:", data);
                 // Save the message to the database
                 const message = yield prisma_1.prisma.message.create({
-                    include: { user: true },
+                    include: {
+                        user: true,
+                        replyTo: {
+                            include: {
+                                user: true,
+                            },
+                        },
+                    },
                     data: {
                         text,
                         userId,
                         conversationId,
                         type,
                         file,
+                        fileName,
+                        fileSize,
                         voiceDuration,
+                        replyToId: replyToId || null, // Add support for reply
                     },
                 });
-                const messageData = { message: (0, mappers_1.messageMapper)(message) };
+                const messageData = { message: (0, mappers_1.messageFullMapper)(message) };
                 // Emit the message to the conversation room, including the sender's socket
                 socket
                     .to(`conversation_${conversationId}`)

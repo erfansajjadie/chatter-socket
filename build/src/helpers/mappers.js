@@ -4,6 +4,7 @@ exports.mapper = mapper;
 exports.userMapper = userMapper;
 exports.conversationMapper = conversationMapper;
 exports.messageMapper = messageMapper;
+exports.messageFullMapper = messageFullMapper;
 const client_1 = require("@prisma/client");
 const functions_1 = require("./functions");
 function mapper(list, mappingFunction) {
@@ -63,6 +64,37 @@ function messageMapper(data) {
         senderId: data.user.id,
         voiceDuration: data.voiceDuration,
         isSeen: data.isSeen,
+        fileName: data.fileName,
+        fileSize: data.fileSize,
         senderAvatar: (0, functions_1.getFileUrl)(data.user.avatar),
+    };
+}
+function messageFullMapper(data) {
+    var _a, _b;
+    return {
+        id: data.id,
+        text: data.text,
+        date: (0, functions_1.getTimeFormat)(data.createdAt),
+        dateTime: data.createdAt.toISOString(), // Add raw ISO date string for the client to parse
+        senderName: data.user.name,
+        conversationId: data.conversationId,
+        type: data.type,
+        file: (0, functions_1.getFileUrl)(data.file),
+        senderId: data.user.id,
+        voiceDuration: data.voiceDuration,
+        isSeen: data.isSeen,
+        senderAvatar: (0, functions_1.getAvatarUrl)(data.user.avatar),
+        // Add reply information
+        replyToId: data.replyToId,
+        replyTo: data.replyTo
+            ? {
+                id: data.replyTo.id,
+                text: data.replyTo.text,
+                senderName: (_a = data.replyTo.user) === null || _a === void 0 ? void 0 : _a.name,
+                senderId: (_b = data.replyTo.user) === null || _b === void 0 ? void 0 : _b.id,
+                type: data.replyTo.type,
+                file: (0, functions_1.getAvatarUrl)(data.replyTo.file),
+            }
+            : null,
     };
 }

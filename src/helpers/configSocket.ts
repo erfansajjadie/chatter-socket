@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import http from "http";
 import { prisma } from "./prisma";
-import { messageMapper, userMapper } from "./mappers";
+import { messageFullMapper, messageMapper, userMapper } from "./mappers";
 import { CallService } from "./callSockets";
 import socketService from "./socketService";
 
@@ -35,24 +35,43 @@ function configureSocket(server: http.Server) {
 
     socket.on("sendMessage", async (data) => {
       try {
-        const { userId, conversationId, text, type, file, voiceDuration } =
-          data;
+        const {
+          userId,
+          conversationId,
+          text,
+          type,
+          file,
+          voiceDuration,
+          replyToId,
+          fileName,
+          fileSize,
+        } = data;
 
         console.log("Received message:", data);
 
         // Save the message to the database
         const message = await prisma.message.create({
-          include: { user: true },
+          include: {
+            user: true,
+            replyTo: {
+              include: {
+                user: true,
+              },
+            },
+          },
           data: {
             text,
             userId,
             conversationId,
             type,
             file,
+            fileName,
+            fileSize,
             voiceDuration,
+            replyToId: replyToId || null, // Add support for reply
           },
         });
-        const messageData = { message: messageMapper(message) };
+        const messageData = { message: messageFullMapper(message) };
 
         // Emit the message to the conversation room, including the sender's socket
         socket
