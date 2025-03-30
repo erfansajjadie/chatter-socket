@@ -117,6 +117,8 @@ export function messageFullMapper(data: MessageFull) {
     conversationId: data.conversationId,
     type: data.type,
     file: getFileUrl(data.file),
+    fileName: data.fileName,
+    fileSize: data.fileSize,
     senderId: data.user.id,
     voiceDuration: data.voiceDuration,
     isSeen: data.isSeen,

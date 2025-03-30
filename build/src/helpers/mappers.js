@@ -80,6 +80,8 @@ function messageFullMapper(data) {
         conversationId: data.conversationId,
         type: data.type,
         file: (0, functions_1.getFileUrl)(data.file),
+        fileName: data.fileName,
+        fileSize: data.fileSize,
         senderId: data.user.id,
         voiceDuration: data.voiceDuration,
         isSeen: data.isSeen,
