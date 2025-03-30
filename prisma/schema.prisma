@@ -54,7 +54,7 @@ model Message {
   file           String?      @db.LongText
   isSeen         Boolean      @default(false)
   fileName       String?
-  fileSize       Int?
+  fileSize       String?
   replyToId      Int?         // ID of the message being replied to
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
