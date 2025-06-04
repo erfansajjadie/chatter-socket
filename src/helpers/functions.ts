@@ -9,7 +9,7 @@ export function getAvatarUrl(url?: string | null) {
   if (!url) {
     return null;
   }
-  return `https://chat.ghadir-ma.ir/storage/${url}`;
+  return `https://web.ghadir-ma.ir/storage/${url}`;
 }
 
 export function getTimeFormat(inputDate: Date) {

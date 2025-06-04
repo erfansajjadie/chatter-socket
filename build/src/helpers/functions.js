@@ -13,7 +13,7 @@ function getAvatarUrl(url) {
     if (!url) {
         return null;
     }
-    return `https://chat.ghadir-ma.ir/storage/${url}`;
+    return `https://web.ghadir-ma.ir/storage/${url}`;
 }
 function getTimeFormat(inputDate) {
     const today = new Date();
